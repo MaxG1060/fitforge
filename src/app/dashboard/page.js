@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import BodyMetricsForm from '@/components/BodyMetricsForm'
+import BodyMetricsChart from '@/components/BodyMetricsChart'
 import MealPlan from '@/components/MealPlan'
 import TrainingPlan from '@/components/TrainingPlan'
 import StravaWorkouts from '@/components/StravaWorkouts'
@@ -11,15 +12,15 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/login')
 
-  const { data: latestMetrics } = await supabase
+  const { data: metricsHistory } = await supabase
     .from('body_metrics')
     .select('*')
     .eq('user_id', user.id)
     .order('recorded_at', { ascending: false })
-    .limit(1)
-    .single()
+    .limit(90)
 
-  const m = latestMetrics
+  const history = metricsHistory ?? []
+  const m = history[0]
 
   const { data: stravaToken } = await supabase
     .from('strava_tokens')
@@ -52,6 +53,8 @@ export default async function DashboardPage() {
           <StatCard label="Body Fat" value={m?.body_fat_pct ?? '—'} unit="%" />
           <StatCard label="Muscle Mass" value={m?.muscle_mass_kg ?? '—'} unit="kg" />
         </div>
+
+        <BodyMetricsChart history={history} />
 
         <BodyMetricsForm latest={m} />
 
