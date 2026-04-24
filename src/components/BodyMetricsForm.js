@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { saveBodyMetrics } from '@/app/actions/metrics'
+import { useToast } from './ToastProvider'
 
 const initialState = { error: null, success: false }
 
@@ -16,6 +17,15 @@ async function formAction(prevState, formData) {
 
 export default function BodyMetricsForm({ latest }) {
   const [state, action, pending] = useActionState(formAction, initialState)
+  const toast = useToast()
+  const lastSeen = useRef(state)
+
+  useEffect(() => {
+    if (state === lastSeen.current) return
+    lastSeen.current = state
+    if (state.error) toast.error(state.error)
+    else if (state.success) toast.success('Metrics saved!')
+  }, [state, toast])
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
@@ -66,17 +76,6 @@ export default function BodyMetricsForm({ latest }) {
             />
           </div>
         </div>
-
-        {state.error && (
-          <p className="text-sm text-red-400 bg-red-950 border border-red-800 rounded-lg px-4 py-2">
-            {state.error}
-          </p>
-        )}
-        {state.success && (
-          <p className="text-sm text-green-400 bg-green-950 border border-green-800 rounded-lg px-4 py-2">
-            Metrics saved!
-          </p>
-        )}
 
         <button
           type="submit"

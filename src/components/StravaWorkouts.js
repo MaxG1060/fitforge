@@ -2,24 +2,23 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from './ToastProvider'
 
 export default function StravaWorkouts({ connected, workouts }) {
   const router = useRouter()
+  const toast = useToast()
   const [syncing, setSyncing] = useState(false)
-  const [error, setError] = useState(null)
-  const [justSynced, setJustSynced] = useState(null)
 
   async function sync() {
     setSyncing(true)
-    setError(null)
     try {
       const res = await fetch('/api/strava/sync', { method: 'POST' })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      setJustSynced(data.synced)
+      toast.success(`Synced ${data.synced} ${data.synced === 1 ? 'activity' : 'activities'}.`)
       router.refresh()
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     } finally {
       setSyncing(false)
     }
@@ -57,17 +56,6 @@ export default function StravaWorkouts({ connected, workouts }) {
           {syncing ? 'Syncing…' : 'Sync now'}
         </button>
       </div>
-
-      {error && (
-        <p className="text-sm text-red-400 bg-red-950 border border-red-800 rounded-lg px-4 py-2 mb-3">
-          {error}
-        </p>
-      )}
-      {justSynced !== null && !error && (
-        <p className="text-sm text-green-400 bg-green-950 border border-green-800 rounded-lg px-4 py-2 mb-3">
-          Synced {justSynced} {justSynced === 1 ? 'activity' : 'activities'}.
-        </p>
-      )}
 
       {workouts.length === 0 ? (
         <p className="text-sm text-zinc-500">No workouts yet — click &quot;Sync now&quot; to pull your latest activities.</p>

@@ -1,24 +1,25 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from './ToastProvider'
 
 export default function MealPlan({ savedPlan, savedAt }) {
+  const toast = useToast()
   const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(savedAt ?? null)
 
   async function generate() {
     setLoading(true)
-    setError(null)
     try {
       const res = await fetch('/api/meal-plan', { method: 'POST' })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setPlan(data.plan)
       setGeneratedAt(new Date().toISOString())
+      toast.success('Meal plan generated.')
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     } finally {
       setLoading(false)
     }
@@ -40,12 +41,6 @@ export default function MealPlan({ savedPlan, savedAt }) {
         5 high-protein meals · 2.5g protein/kg · batch-cook ready
         {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
       </p>
-
-      {error && (
-        <p className="text-sm text-red-400 bg-red-950 border border-red-800 rounded-lg px-4 py-2 mb-4">
-          {error}
-        </p>
-      )}
 
       {loading && (
         <div className="space-y-2">

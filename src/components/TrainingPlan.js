@@ -1,24 +1,41 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from './ToastProvider'
+
+const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
+const DEFAULT_SPORTS = ['Gym', 'Running']
 
 export default function TrainingPlan({ savedPlan, savedAt }) {
+  const toast = useToast()
   const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(savedAt ?? null)
+  const [sports, setSports] = useState(DEFAULT_SPORTS)
+
+  function toggleSport(s) {
+    setSports((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
+  }
 
   async function generate() {
+    if (sports.length === 0) {
+      toast.error('Pick at least one sport.')
+      return
+    }
     setLoading(true)
-    setError(null)
     try {
-      const res = await fetch('/api/training-plan', { method: 'POST' })
+      const res = await fetch('/api/training-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sports }),
+      })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setPlan(data.plan)
       setGeneratedAt(new Date().toISOString())
+      toast.success('Training plan generated.')
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     } finally {
       setLoading(false)
     }
@@ -37,15 +54,32 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
         </button>
       </div>
       <p className="text-sm text-zinc-500 mb-4">
-        4 training days · functional fitness + fat loss · gym-based
+        Functional fitness + fat loss · tailored to your recent Strava activity
         {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
       </p>
 
-      {error && (
-        <p className="text-sm text-red-400 bg-red-950 border border-red-800 rounded-lg px-4 py-2 mb-4">
-          {error}
-        </p>
-      )}
+      <div className="mb-4">
+        <p className="text-xs font-medium text-zinc-400 mb-2">Sports for this week</p>
+        <div className="flex flex-wrap gap-2">
+          {SPORTS.map((s) => {
+            const active = sports.includes(s)
+            return (
+              <button
+                key={s}
+                onClick={() => toggleSport(s)}
+                disabled={loading}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                  active
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                {s}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       {loading && (
         <div className="space-y-2">

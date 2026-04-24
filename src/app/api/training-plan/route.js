@@ -1,11 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 
-export async function POST() {
+export async function POST(request) {
   const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return Response.json({ error: 'Not authenticated' }, { status: 401 })
+
+  let sports = []
+  try {
+    const body = await request.json()
+    if (Array.isArray(body?.sports)) sports = body.sports.filter((s) => typeof s === 'string')
+  } catch {}
+  if (sports.length === 0) sports = ['Gym', 'Running']
 
   const { data: metrics } = await supabase
     .from('body_metrics')
@@ -43,7 +50,7 @@ export async function POST() {
     system: [
       {
         type: 'text',
-        text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load. Format as clean markdown: use ## for each day (e.g. ## Monday — Upper Body), bullet points for exercises with sets × reps, and a brief coaching note per session. Goals: functional fitness + fat loss. Training style: gym-based, intermediate level. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder. Reference their recent activity in the weekly focus note. No preamble — start directly with Monday.`,
+        text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown: use ## for each day (e.g. ## Monday — Upper Body), bullet points for exercises with sets × reps, and a brief coaching note per session. Goals: functional fitness + fat loss. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder. Reference their recent activity in the weekly focus note. No preamble — start directly with Monday.`,
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -52,10 +59,12 @@ export async function POST() {
         role: 'user',
         content: `Generate a weekly training plan (Mon–Sun) for an athlete with these stats: ${statsLine}.
 
+Sports to include this week: ${sports.join(', ')}. Build the plan around these only.
+
 Recent activity (last 14 days from Strava):
 ${workoutSummary}
 
-Include 4 training days and 3 rest/active recovery days. Blend strength training with conditioning. End with a "Weekly focus" note that briefly references the recent training load.`,
+Pick a sensible number of training days (typically 3–5) with appropriate rest/active recovery. End with a "Weekly focus" note that briefly references the recent training load and explains how this week's sport mix fits.`,
       },
     ],
   })
