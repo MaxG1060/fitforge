@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import BodyMetricsForm from '@/components/BodyMetricsForm'
 import BodyMetricsChart from '@/components/BodyMetricsChart'
 import StravaWorkouts from '@/components/StravaWorkouts'
+import WhoopWidget from '@/components/WhoopWidget'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -30,6 +31,18 @@ export default async function DashboardPage() {
     .order('started_at', { ascending: false })
     .limit(10)
 
+  const { data: whoopToken } = await supabase
+    .from('whoop_tokens')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const [recoveryRes, sleepRes, cycleRes] = await Promise.all([
+    supabase.from('whoop_recovery').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('whoop_sleep').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('whoop_cycle').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1).maybeSingle(),
+  ])
+
   return (
     <>
       <div>
@@ -43,6 +56,12 @@ export default async function DashboardPage() {
         <StatCard label="Muscle Mass" value={m?.muscle_mass_kg ?? '—'} unit="kg" />
       </div>
 
+      <WhoopWidget
+        connected={!!whoopToken}
+        recovery={recoveryRes.data}
+        sleep={sleepRes.data}
+        cycle={cycleRes.data}
+      />
       <BodyMetricsChart history={history} />
       <BodyMetricsForm latest={m} />
       <StravaWorkouts connected={!!stravaToken} workouts={workouts ?? []} />
