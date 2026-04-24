@@ -24,8 +24,8 @@ export default function TrainingPlan() {
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-zinc-200">This Week&apos;s Training Plan</h3>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <h3 className="font-semibold text-zinc-200 min-w-0 truncate">This Week&apos;s Training Plan</h3>
         <button
           onClick={generate}
           disabled={loading}

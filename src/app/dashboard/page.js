@@ -36,12 +36,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-orange-500">FitForge</h1>
-        <span className="text-sm text-zinc-400">{user.email}</span>
+      <header className="border-b border-zinc-800 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-orange-500 shrink-0">FitForge</h1>
+        <span className="text-xs sm:text-sm text-zinc-400 truncate min-w-0">{user.email}</span>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div>
           <h2 className="text-2xl font-semibold">Welcome back</h2>
           <p className="mt-1 text-zinc-400">Here&apos;s your fitness overview.</p>

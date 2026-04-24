@@ -24,8 +24,8 @@ export default function MealPlan() {
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-zinc-200">Sunday Meal Prep</h3>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <h3 className="font-semibold text-zinc-200 min-w-0 truncate">Sunday Meal Prep</h3>
         <button
           onClick={generate}
           disabled={loading}

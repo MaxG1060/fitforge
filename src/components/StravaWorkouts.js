@@ -44,10 +44,10 @@ export default function StravaWorkouts({ connected, workouts }) {
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold text-zinc-200">Recent Workouts</h3>
-          <p className="text-sm text-zinc-500">Synced from Strava</p>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-zinc-200 truncate">Recent Workouts</h3>
+          <p className="text-sm text-zinc-500 truncate">Synced from Strava</p>
         </div>
         <button
           onClick={sync}

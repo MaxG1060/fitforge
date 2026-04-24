@@ -25,7 +25,7 @@ export default function BodyMetricsForm({ latest }) {
       </p>
 
       <form action={action} className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1">
               Weight (kg)
