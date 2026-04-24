@@ -1,11 +1,38 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import BodyMetricsForm from '@/components/BodyMetricsForm'
+import MealPlan from '@/components/MealPlan'
+import TrainingPlan from '@/components/TrainingPlan'
+import StravaWorkouts from '@/components/StravaWorkouts'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const { data: latestMetrics } = await supabase
+    .from('body_metrics')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('recorded_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const m = latestMetrics
+
+  const { data: stravaToken } = await supabase
+    .from('strava_tokens')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const { data: workouts } = await supabase
+    .from('workouts')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('started_at', { ascending: false })
+    .limit(10)
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -21,20 +48,17 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard label="Weight" value="—" unit="kg" />
-          <StatCard label="Body Fat" value="—" unit="%" />
-          <StatCard label="Muscle Mass" value="—" unit="kg" />
+          <StatCard label="Weight" value={m?.weight_kg ?? '—'} unit="kg" />
+          <StatCard label="Body Fat" value={m?.body_fat_pct ?? '—'} unit="%" />
+          <StatCard label="Muscle Mass" value={m?.muscle_mass_kg ?? '—'} unit="kg" />
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-          <h3 className="font-semibold text-zinc-200 mb-2">Recent Workouts</h3>
-          <p className="text-sm text-zinc-500">No workouts logged yet. Strava sync coming soon.</p>
-        </div>
+        <BodyMetricsForm latest={m} />
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-          <h3 className="font-semibold text-zinc-200 mb-2">This Week&apos;s Plan</h3>
-          <p className="text-sm text-zinc-500">AI training plan coming soon.</p>
-        </div>
+        <StravaWorkouts connected={!!stravaToken} workouts={workouts ?? []} />
+
+        <TrainingPlan />
+        <MealPlan />
       </main>
     </div>
   )
