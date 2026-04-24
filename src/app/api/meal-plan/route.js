@@ -61,5 +61,6 @@ Calibrate carb and total calorie targets to this load. Focus on whole foods, hig
   })
 
   const plan = response.content[0].text
+  await supabase.from('plans').insert({ user_id: user.id, kind: 'meal', content: plan })
   return Response.json({ plan })
 }

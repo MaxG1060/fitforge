@@ -61,5 +61,6 @@ Include 4 training days and 3 rest/active recovery days. Blend strength training
   })
 
   const plan = response.content[0].text
+  await supabase.from('plans').insert({ user_id: user.id, kind: 'training', content: plan })
   return Response.json({ plan })
 }

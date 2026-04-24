@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 
-export default function TrainingPlan() {
-  const [plan, setPlan] = useState(null)
+export default function TrainingPlan({ savedPlan, savedAt }) {
+  const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [generatedAt, setGeneratedAt] = useState(savedAt ?? null)
 
   async function generate() {
     setLoading(true)
@@ -15,6 +16,7 @@ export default function TrainingPlan() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setPlan(data.plan)
+      setGeneratedAt(new Date().toISOString())
     } catch (e) {
       setError(e.message)
     } finally {
@@ -34,7 +36,10 @@ export default function TrainingPlan() {
           {loading ? 'Generating…' : plan ? 'Regenerate' : 'Generate plan'}
         </button>
       </div>
-      <p className="text-sm text-zinc-500 mb-4">4 training days · functional fitness + fat loss · gym-based</p>
+      <p className="text-sm text-zinc-500 mb-4">
+        4 training days · functional fitness + fat loss · gym-based
+        {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
+      </p>
 
       {error && (
         <p className="text-sm text-red-400 bg-red-950 border border-red-800 rounded-lg px-4 py-2 mb-4">
@@ -61,6 +66,15 @@ export default function TrainingPlan() {
       )}
     </div>
   )
+}
+
+function formatWhen(iso) {
+  const d = new Date(iso)
+  const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24))
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days} days ago`
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 function MarkdownRenderer({ content }) {

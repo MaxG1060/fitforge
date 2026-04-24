@@ -35,6 +35,15 @@ export default async function DashboardPage() {
     .order('started_at', { ascending: false })
     .limit(10)
 
+  const { data: savedPlans } = await supabase
+    .from('plans')
+    .select('kind, content, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  const latestTraining = (savedPlans ?? []).find((p) => p.kind === 'training')
+  const latestMeal = (savedPlans ?? []).find((p) => p.kind === 'meal')
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="border-b border-zinc-800 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
@@ -60,8 +69,8 @@ export default async function DashboardPage() {
 
         <StravaWorkouts connected={!!stravaToken} workouts={workouts ?? []} />
 
-        <TrainingPlan />
-        <MealPlan />
+        <TrainingPlan savedPlan={latestTraining?.content} savedAt={latestTraining?.created_at} />
+        <MealPlan savedPlan={latestMeal?.content} savedAt={latestMeal?.created_at} />
       </main>
     </div>
   )
