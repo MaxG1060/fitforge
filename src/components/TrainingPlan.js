@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useToast } from './ToastProvider'
 
-const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
+const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
 const DEFAULT_SPORTS = ['Gym', 'Running']
 
 export default function TrainingPlan({ savedPlan, savedAt }) {
