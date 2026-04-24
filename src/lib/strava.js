@@ -56,6 +56,15 @@ export async function getValidAccessToken(supabase, userId) {
   return refreshed.access_token
 }
 
+export async function fetchActivity(accessToken, activityId) {
+  const res = await fetch(
+    `https://www.strava.com/api/v3/activities/${activityId}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+  if (!res.ok) throw new Error(`Strava activity fetch failed: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchRecentActivities(accessToken, perPage = 30) {
   const res = await fetch(
     `https://www.strava.com/api/v3/athlete/activities?per_page=${perPage}`,
