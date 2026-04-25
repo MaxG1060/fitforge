@@ -71,9 +71,18 @@ async function sync() {
       updated_at: new Date().toISOString(),
     }))
 
-  if (recoveryRows.length) await supabase.from('whoop_recovery').upsert(recoveryRows)
-  if (sleepRows.length) await supabase.from('whoop_sleep').upsert(sleepRows)
-  if (cycleRows.length) await supabase.from('whoop_cycle').upsert(cycleRows)
+  if (recoveryRows.length) {
+    const { error } = await supabase.from('whoop_recovery').upsert(recoveryRows)
+    if (error) throw new Error(`Recovery insert failed: ${error.message}`)
+  }
+  if (sleepRows.length) {
+    const { error } = await supabase.from('whoop_sleep').upsert(sleepRows)
+    if (error) throw new Error(`Sleep insert failed: ${error.message}`)
+  }
+  if (cycleRows.length) {
+    const { error } = await supabase.from('whoop_cycle').upsert(cycleRows)
+    if (error) throw new Error(`Cycle insert failed: ${error.message}`)
+  }
 
   revalidatePath('/dashboard')
 
