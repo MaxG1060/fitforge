@@ -11,6 +11,12 @@ function isoDate(d) {
   return new Date(d).toISOString().slice(0, 10)
 }
 
+function dedupeByDate(rows) {
+  const map = new Map()
+  for (const row of rows) map.set(row.date, row)
+  return [...map.values()]
+}
+
 export async function POST() {
   try {
     return await sync()
@@ -71,24 +77,28 @@ async function sync() {
       updated_at: new Date().toISOString(),
     }))
 
-  if (recoveryRows.length) {
-    const { error } = await supabase.from('whoop_recovery').upsert(recoveryRows)
+  const rec = dedupeByDate(recoveryRows)
+  const slp = dedupeByDate(sleepRows)
+  const cyc = dedupeByDate(cycleRows)
+
+  if (rec.length) {
+    const { error } = await supabase.from('whoop_recovery').upsert(rec)
     if (error) throw new Error(`Recovery insert failed: ${error.message}`)
   }
-  if (sleepRows.length) {
-    const { error } = await supabase.from('whoop_sleep').upsert(sleepRows)
+  if (slp.length) {
+    const { error } = await supabase.from('whoop_sleep').upsert(slp)
     if (error) throw new Error(`Sleep insert failed: ${error.message}`)
   }
-  if (cycleRows.length) {
-    const { error } = await supabase.from('whoop_cycle').upsert(cycleRows)
+  if (cyc.length) {
+    const { error } = await supabase.from('whoop_cycle').upsert(cyc)
     if (error) throw new Error(`Cycle insert failed: ${error.message}`)
   }
 
   revalidatePath('/dashboard')
 
   return Response.json({
-    recovery: recoveryRows.length,
-    sleep: sleepRows.length,
-    cycles: cycleRows.length,
+    recovery: rec.length,
+    sleep: slp.length,
+    cycles: cyc.length,
   })
 }
