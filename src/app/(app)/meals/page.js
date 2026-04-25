@@ -17,8 +17,9 @@ export default async function MealsPage() {
   return (
     <>
       <div>
-        <h2 className="text-2xl font-semibold">Meal Plan</h2>
-        <p className="mt-1 text-zinc-400">High-protein Sunday meal prep, calibrated to your training load.</p>
+        <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-500">Sunday Prep</p>
+        <h2 className="mt-1 text-3xl font-black tracking-tight">Meal Plan</h2>
+        <p className="mt-2 text-sm text-zinc-500">High-protein meal prep, calibrated to your training load.</p>
       </div>
       <MealPlan savedPlan={latest?.content} savedAt={latest?.created_at} />
     </>

@@ -28,8 +28,9 @@ export default function BodyMetricsForm({ latest }) {
   }, [state, toast])
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-      <h3 className="font-semibold text-zinc-200 mb-1">Log Body Metrics</h3>
+    <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6">
+      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">Log Metrics</p>
+      <h3 className="text-xl font-black tracking-tight mb-1">Body</h3>
       <p className="text-sm text-zinc-500 mb-4">
         Enter your latest Renpho readings
       </p>
@@ -37,42 +38,39 @@ export default function BodyMetricsForm({ latest }) {
       <form action={action} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500 mb-1.5">
               Weight (kg)
             </label>
             <input
               name="weight_kg"
               type="number"
               step="0.1"
-              defaultValue={latest?.weight_kg ?? ''}
-              placeholder="e.g. 82.5"
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder={latest?.weight_kg != null ? `last: ${latest.weight_kg}` : 'e.g. 82.5'}
+              className="w-full rounded-md bg-black border border-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500 mb-1.5">
               Body Fat (%)
             </label>
             <input
               name="body_fat_pct"
               type="number"
               step="0.1"
-              defaultValue={latest?.body_fat_pct ?? ''}
-              placeholder="e.g. 18.2"
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder={latest?.body_fat_pct != null ? `last: ${latest.body_fat_pct}` : 'e.g. 18.2'}
+              className="w-full rounded-md bg-black border border-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500 mb-1.5">
               Muscle Mass (kg)
             </label>
             <input
               name="muscle_mass_kg"
               type="number"
               step="0.1"
-              defaultValue={latest?.muscle_mass_kg ?? ''}
-              placeholder="e.g. 38.1"
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder={latest?.muscle_mass_kg != null ? `last: ${latest.muscle_mass_kg}` : 'e.g. 38.1'}
+              className="w-full rounded-md bg-black border border-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
             />
           </div>
         </div>
@@ -80,9 +78,9 @@ export default function BodyMetricsForm({ latest }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          className="rounded-md bg-orange-500 px-4 py-2 text-xs font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
         >
-          {pending ? 'Saving…' : 'Save metrics'}
+          {pending ? 'Saving…' : 'Save'}
         </button>
       </form>
     </div>

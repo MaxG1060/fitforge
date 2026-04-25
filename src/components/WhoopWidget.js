@@ -26,14 +26,15 @@ export default function WhoopWidget({ connected, recovery, sleep, cycle }) {
 
   if (!connected) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-        <h3 className="font-semibold text-zinc-200 mb-2">WHOOP Recovery</h3>
+      <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">WHOOP</p>
+        <h3 className="text-xl font-black tracking-tight mb-2">Recovery, sleep & strain</h3>
         <p className="text-sm text-zinc-500 mb-4">
-          Connect WHOOP to see today&apos;s recovery, sleep, and strain.
+          Connect WHOOP to see today&apos;s metrics.
         </p>
         <a
           href="/api/whoop/connect"
-          className="inline-block rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
+          className="inline-block rounded-md bg-emerald-500 px-4 py-2 text-xs font-bold tracking-[0.15em] uppercase text-black hover:bg-emerald-400 transition-colors"
         >
           Connect WHOOP
         </a>
@@ -42,27 +43,27 @@ export default function WhoopWidget({ connected, recovery, sleep, cycle }) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+    <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6">
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="min-w-0">
-          <h3 className="font-semibold text-zinc-200 truncate">WHOOP Today</h3>
-          <p className="text-sm text-zinc-500 truncate">Recovery, sleep, and strain</p>
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">WHOOP · Today</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight truncate">Recovery, sleep & strain</h3>
         </div>
         <button
           onClick={sync}
           disabled={syncing}
-          className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+          className="rounded-md border border-zinc-800 bg-transparent px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 disabled:opacity-50 transition-colors"
         >
-          {syncing ? 'Syncing…' : 'Sync now'}
+          {syncing ? 'Syncing…' : 'Sync'}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Ring
           label="Recovery"
           value={recovery?.score}
           max={100}
-          color={recoveryColor(recovery?.score)}
+          color={percentColor(recovery?.score)}
           renderValue={(v) => Math.round(v)}
           unit="%"
           sub={recovery?.hrv_ms ? `HRV ${Math.round(recovery.hrv_ms)}ms` : null}
@@ -72,7 +73,7 @@ export default function WhoopWidget({ connected, recovery, sleep, cycle }) {
           label="Sleep"
           value={sleep?.performance_pct}
           max={100}
-          color="#60a5fa"
+          color={percentColor(sleep?.performance_pct)}
           renderValue={(v) => Math.round(v)}
           unit="%"
           sub={sleep?.duration_min ? formatDuration(sleep.duration_min) : null}
@@ -102,8 +103,8 @@ function Ring({ label, value, max, color, renderValue, unit, sub, sub2 }) {
   const dash = c * pct
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 flex flex-col items-center">
-      <p className="text-xs text-zinc-500 mb-2 self-start">{label}</p>
+    <div className="rounded-lg border border-zinc-900 bg-black p-4 flex flex-col items-center">
+      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2 self-start">{label}</p>
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -126,7 +127,7 @@ function Ring({ label, value, max, color, renderValue, unit, sub, sub2 }) {
         />
       </svg>
       <div className="-mt-[78px] flex flex-col items-center pointer-events-none">
-        <span className="text-2xl font-bold" style={{ color: value != null ? color : '#71717a' }}>
+        <span className="text-3xl font-black tracking-tight" style={{ color: value != null ? color : '#71717a' }}>
           {value != null ? renderValue(value) : '—'}
           {value != null && unit && <span className="text-sm text-zinc-400">{unit}</span>}
         </span>
@@ -139,19 +140,25 @@ function Ring({ label, value, max, color, renderValue, unit, sub, sub2 }) {
   )
 }
 
-function recoveryColor(score) {
-  if (score == null) return '#71717a'
-  if (score >= 67) return '#22c55e'
-  if (score >= 34) return '#eab308'
-  return '#ef4444'
+function hsl(h, s, l) {
+  return `hsl(${h.toFixed(0)} ${s}% ${l}%)`
+}
+
+function percentColor(pct) {
+  if (pct == null) return '#71717a'
+  const clamped = Math.max(0, Math.min(100, pct))
+  const hue = (clamped / 100) * 120
+  return hsl(hue, 70, 50)
 }
 
 function strainColor(strain) {
   if (strain == null) return '#71717a'
-  if (strain >= 18) return '#ef4444'
-  if (strain >= 14) return '#f97316'
-  if (strain >= 10) return '#3b82f6'
-  return '#60a5fa'
+  const s = Math.max(0, Math.min(21, strain))
+  let hue
+  if (s <= 13) hue = (s / 13) * 120
+  else if (s <= 18) hue = 120
+  else hue = 120 - ((s - 18) / 3) * 90
+  return hsl(hue, 75, 50)
 }
 
 function formatDuration(minutes) {

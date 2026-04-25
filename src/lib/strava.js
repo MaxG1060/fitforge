@@ -65,6 +65,14 @@ export async function fetchActivity(accessToken, activityId) {
   return res.json()
 }
 
+export async function fetchAthlete(accessToken) {
+  const res = await fetch('https://www.strava.com/api/v3/athlete', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) throw new Error(`Strava athlete fetch failed: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchRecentActivities(accessToken, perPage = 30) {
   const res = await fetch(
     `https://www.strava.com/api/v3/athlete/activities?per_page=${perPage}`,

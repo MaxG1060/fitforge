@@ -2,9 +2,36 @@
 
 import { useState } from 'react'
 import { useToast } from './ToastProvider'
+import Markdown from './Markdown'
+import SportIcon, { pickIconType } from './SportIcon'
 
 const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
 const DEFAULT_SPORTS = ['Gym', 'Running']
+
+function splitDays(plan) {
+  if (!plan) return { intro: '', days: [] }
+  const lines = plan.split('\n')
+  const days = []
+  let current = null
+  const intro = []
+  let seen = false
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      if (current) days.push(current)
+      current = { title: line.slice(3).trim(), bodyLines: [] }
+      seen = true
+    } else if (current) {
+      current.bodyLines.push(line)
+    } else if (!seen) {
+      intro.push(line)
+    }
+  }
+  if (current) days.push(current)
+  return {
+    intro: intro.join('\n').trim(),
+    days: days.map((d) => ({ title: d.title, body: d.bodyLines.join('\n').trim() })),
+  }
+}
 
 export default function TrainingPlan({ savedPlan, savedAt }) {
   const toast = useToast()
@@ -42,25 +69,28 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+    <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6">
       <div className="flex items-center justify-between gap-3 mb-2">
-        <h3 className="font-semibold text-zinc-200 min-w-0 truncate">This Week&apos;s Training Plan</h3>
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Plan</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight truncate">This Week</h3>
+        </div>
         <button
           onClick={generate}
           disabled={loading}
-          className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          className="rounded-md bg-orange-500 px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Generating…' : plan ? 'Regenerate' : 'Generate plan'}
+          {loading ? 'Generating…' : plan ? 'Regenerate' : 'Generate'}
         </button>
       </div>
-      <p className="text-sm text-zinc-500 mb-4">
+      <p className="text-sm text-zinc-500 mb-5">
         Functional fitness + fat loss · tailored to your recent Strava activity
         {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
       </p>
 
-      <div className="mb-4">
-        <p className="text-xs font-medium text-zinc-400 mb-2">Sports for this week</p>
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-5">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2.5">Sports this week</p>
+        <div className="flex flex-wrap gap-1.5">
           {SPORTS.map((s) => {
             const active = sports.includes(s)
             return (
@@ -68,10 +98,10 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
                 key={s}
                 onClick={() => toggleSport(s)}
                 disabled={loading}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                className={`rounded-md px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase transition-colors disabled:opacity-50 ${
                   active
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    ? 'bg-orange-500 text-black'
+                    : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
                 }`}
               >
                 {s}
@@ -89,14 +119,32 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
         </div>
       )}
 
-      {plan && !loading && (
-        <div>
-          <MarkdownRenderer content={plan} />
-        </div>
-      )}
+      {plan && !loading && (() => {
+        const parsed = splitDays(plan)
+        return (
+          <div className="space-y-3">
+            {parsed.intro && <Markdown content={parsed.intro} accent="#f97316" />}
+            {parsed.days.map((day, i) => (
+              <section key={i} className="rounded-lg border border-zinc-900 bg-black/40 p-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500 min-w-0 truncate">
+                    {day.title}
+                  </h3>
+                  <SportIcon
+                    type={pickIconType(`${day.title} ${day.body}`)}
+                    size={20}
+                    className="text-zinc-400 shrink-0"
+                  />
+                </div>
+                <Markdown content={day.body} accent="#f97316" />
+              </section>
+            ))}
+          </div>
+        )
+      })()}
 
       {!plan && !loading && (
-        <p className="text-sm text-zinc-500">Click &quot;Generate plan&quot; to get your AI-tailored weekly training.</p>
+        <p className="text-sm text-zinc-500">Click &quot;Generate&quot; to get your AI-tailored weekly training.</p>
       )}
     </div>
   )
@@ -109,26 +157,4 @@ function formatWhen(iso) {
   if (days === 1) return 'yesterday'
   if (days < 7) return `${days} days ago`
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function MarkdownRenderer({ content }) {
-  const lines = content.split('\n')
-  const elements = []
-  let key = 0
-
-  for (const line of lines) {
-    if (line.startsWith('## ')) {
-      elements.push(<h2 key={key++} className="text-orange-400 font-semibold text-base mt-5 mb-1">{line.slice(3)}</h2>)
-    } else if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className="text-zinc-300 font-medium text-sm mt-3 mb-1">{line.slice(4)}</h3>)
-    } else if (line.startsWith('- ') || line.startsWith('* ')) {
-      elements.push(<li key={key++} className="text-zinc-400 text-sm ml-4 list-disc">{line.slice(2)}</li>)
-    } else if (line.trim() === '') {
-      elements.push(<br key={key++} />)
-    } else {
-      elements.push(<p key={key++} className="text-zinc-400 text-sm">{line}</p>)
-    }
-  }
-
-  return <div>{elements}</div>
 }

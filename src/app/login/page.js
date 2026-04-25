@@ -84,6 +84,22 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-zinc-800" />
+          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-600">or</span>
+          <div className="h-px flex-1 bg-zinc-800" />
+        </div>
+
+        <a
+          href="/api/strava/login"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#fc4c02] px-4 py-2.5 font-semibold text-white hover:bg-[#e34402] transition-colors"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.599h4.172L10.463 0l-7 13.828h4.169" />
+          </svg>
+          Sign in with Strava
+        </a>
+
         <p className="mt-6 text-center text-sm text-zinc-400">
           {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button

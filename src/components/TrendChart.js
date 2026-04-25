@@ -28,10 +28,8 @@ export default function TrendChart({ body, recovery, sleep, cycle }) {
     .sort((a, b) => a.t - b.t)
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h3 className="font-semibold text-zinc-200 min-w-0 truncate">Trend</h3>
-      </div>
+    <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6">
+      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-3">Trend</p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {METRICS.map((m) => {
@@ -42,12 +40,12 @@ export default function TrendChart({ body, recovery, sleep, cycle }) {
               key={m.key}
               onClick={() => isAvailable && setActiveKey(m.key)}
               disabled={!isAvailable}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-md px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase transition-colors ${
                 active
-                  ? 'text-white'
+                  ? 'text-black'
                   : isAvailable
-                    ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                    : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
+                    ? 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
+                    : 'bg-transparent text-zinc-700 cursor-not-allowed'
               }`}
               style={active ? { backgroundColor: m.color } : undefined}
             >
@@ -110,7 +108,7 @@ function Chart({ points, unit, color, fixedMin, fixedMax, integer }) {
     <div>
       <div className="flex items-baseline justify-between mb-2">
         <div>
-          <span className="text-2xl font-bold text-zinc-100">
+          <span className="text-4xl font-black tracking-tight text-white">
             {fmt(last.v)}
           </span>
           {unit && <span className="ml-1 text-sm text-zinc-400">{unit}</span>}
