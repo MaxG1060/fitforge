@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import NavBar from '@/components/NavBar'
+import { signOut } from '@/app/actions/auth'
 
 export default async function AppLayout({ children }) {
   const supabase = await createClient()
@@ -26,6 +27,14 @@ export default async function AppLayout({ children }) {
               className="h-8 w-8 rounded-full border border-zinc-800 shrink-0 object-cover"
             />
           )}
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="rounded-md border border-zinc-800 bg-transparent px-2.5 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors shrink-0"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </header>
       <NavBar />
