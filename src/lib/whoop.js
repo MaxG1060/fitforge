@@ -94,29 +94,29 @@ async function whoopGet(accessToken, path, params = {}) {
 }
 
 export async function fetchProfile(accessToken) {
-  return whoopGet(accessToken, '/v1/user/profile/basic')
+  return whoopGet(accessToken, '/v2/user/profile/basic')
 }
 
 export async function fetchRecentRecovery(accessToken, limit = 14) {
-  return whoopGet(accessToken, '/v1/recovery', { limit })
+  return whoopGet(accessToken, '/v2/recovery', { limit })
 }
 
 export async function fetchRecentSleep(accessToken, limit = 14) {
-  return whoopGet(accessToken, '/v1/activity/sleep', { limit })
+  return whoopGet(accessToken, '/v2/activity/sleep', { limit })
 }
 
 export async function fetchRecentCycles(accessToken, limit = 14) {
-  return whoopGet(accessToken, '/v1/cycle', { limit })
+  return whoopGet(accessToken, '/v2/cycle', { limit })
 }
 
 export async function fetchRecoveryByCycleId(accessToken, cycleId) {
-  return whoopGet(accessToken, `/v1/cycle/${cycleId}/recovery`)
+  return whoopGet(accessToken, `/v2/cycle/${cycleId}/recovery`)
 }
 
 export async function fetchSleepById(accessToken, sleepId) {
-  return whoopGet(accessToken, `/v1/activity/sleep/${sleepId}`)
+  return whoopGet(accessToken, `/v2/activity/sleep/${sleepId}`)
 }
 
 export async function fetchCycleById(accessToken, cycleId) {
-  return whoopGet(accessToken, `/v1/cycle/${cycleId}`)
+  return whoopGet(accessToken, `/v2/cycle/${cycleId}`)
 }

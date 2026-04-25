@@ -12,6 +12,15 @@ function isoDate(d) {
 }
 
 export async function POST() {
+  try {
+    return await sync()
+  } catch (e) {
+    console.error('WHOOP sync failed:', e)
+    return Response.json({ error: e.message ?? 'Sync failed' }, { status: 500 })
+  }
+}
+
+async function sync() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return Response.json({ error: 'Not authenticated' }, { status: 401 })
