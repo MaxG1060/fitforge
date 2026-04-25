@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import BodyMetricsForm from '@/components/BodyMetricsForm'
-import BodyMetricsChart from '@/components/BodyMetricsChart'
+import TrendChart from '@/components/TrendChart'
 import StravaWorkouts from '@/components/StravaWorkouts'
 import WhoopWidget from '@/components/WhoopWidget'
 
@@ -37,11 +37,15 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  const [recoveryRes, sleepRes, cycleRes] = await Promise.all([
-    supabase.from('whoop_recovery').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('whoop_sleep').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('whoop_cycle').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1).maybeSingle(),
+  const [recoveryHist, sleepHist, cycleHist] = await Promise.all([
+    supabase.from('whoop_recovery').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
+    supabase.from('whoop_sleep').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
+    supabase.from('whoop_cycle').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
   ])
+
+  const recoveryRows = recoveryHist.data ?? []
+  const sleepRows = sleepHist.data ?? []
+  const cycleRows = cycleHist.data ?? []
 
   return (
     <>
@@ -58,11 +62,16 @@ export default async function DashboardPage() {
 
       <WhoopWidget
         connected={!!whoopToken}
-        recovery={recoveryRes.data}
-        sleep={sleepRes.data}
-        cycle={cycleRes.data}
+        recovery={recoveryRows[0]}
+        sleep={sleepRows[0]}
+        cycle={cycleRows[0]}
       />
-      <BodyMetricsChart history={history} />
+      <TrendChart
+        body={history}
+        recovery={recoveryRows}
+        sleep={sleepRows}
+        cycle={cycleRows}
+      />
       <BodyMetricsForm latest={m} />
       <StravaWorkouts connected={!!stravaToken} workouts={workouts ?? []} />
     </>
