@@ -15,7 +15,15 @@ export default async function AppLayout({ children }) {
     .maybeSingle()
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col flex-1">
+    <div
+      className="min-h-screen bg-black text-white flex flex-col flex-1"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
+    >
       <header className="border-b border-zinc-900 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
         <h1 className="text-lg font-black tracking-[0.2em] text-orange-500 shrink-0 uppercase">FitForge</h1>
         <div className="flex items-center gap-2.5 min-w-0">
