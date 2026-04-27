@@ -4,6 +4,7 @@ import BodyMetricsForm from '@/components/BodyMetricsForm'
 import TrendChart from '@/components/TrendChart'
 import StravaWorkouts from '@/components/StravaWorkouts'
 import WhoopWidget from '@/components/WhoopWidget'
+import OuraWidget from '@/components/OuraWidget'
 import OnboardingCard from '@/components/OnboardingCard'
 import { getValidAccessToken, fetchAthlete } from '@/lib/strava'
 
@@ -64,21 +65,24 @@ export default async function DashboardPage() {
     .order('started_at', { ascending: false })
     .limit(10)
 
-  const { data: whoopToken } = await supabase
-    .from('whoop_tokens')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: whoopToken }, { data: ouraToken }] = await Promise.all([
+    supabase.from('whoop_tokens').select('user_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('oura_tokens').select('user_id').eq('user_id', user.id).maybeSingle(),
+  ])
 
-  const [recoveryHist, sleepHist, cycleHist] = await Promise.all([
+  const [recoveryHist, sleepHist, cycleHist, ouraReadinessHist, ouraSleepHist] = await Promise.all([
     supabase.from('whoop_recovery').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
     supabase.from('whoop_sleep').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
     supabase.from('whoop_cycle').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
+    supabase.from('oura_readiness').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
+    supabase.from('oura_sleep').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(14),
   ])
 
   const recoveryRows = recoveryHist.data ?? []
   const sleepRows = sleepHist.data ?? []
   const cycleRows = cycleHist.data ?? []
+  const ouraReadinessRows = ouraReadinessHist.data ?? []
+  const ouraSleepRows = ouraSleepHist.data ?? []
 
   return (
     <>
@@ -96,12 +100,22 @@ export default async function DashboardPage() {
         firstname={firstname}
       />
 
-      <WhoopWidget
-        connected={!!whoopToken}
-        recovery={recoveryRows[0]}
-        sleep={sleepRows[0]}
-        cycle={cycleRows[0]}
-      />
+      {whoopToken && (
+        <WhoopWidget
+          connected
+          recovery={recoveryRows[0]}
+          sleep={sleepRows[0]}
+          cycle={cycleRows[0]}
+        />
+      )}
+
+      {ouraToken && (
+        <OuraWidget
+          connected
+          readiness={ouraReadinessRows[0]}
+          sleep={ouraSleepRows[0]}
+        />
+      )}
 
       <div>
         <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-500 mb-3">Body</p>

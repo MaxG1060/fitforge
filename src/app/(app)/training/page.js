@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import TrainingPlan from '@/components/TrainingPlan'
 import GoalBadge from '@/components/GoalBadge'
 import { getGoal } from '@/lib/goals'
-import { computeStreak, todayISO, isoDate } from '@/lib/week'
+import { computeStreak, todayISO, isoDate, weekStartMonday } from '@/lib/week'
 
 export default async function TrainingPage() {
   const supabase = await createClient()
@@ -18,16 +18,28 @@ export default async function TrainingPage() {
     .maybeSingle()
 
   const today = new Date().toISOString().slice(0, 10)
-  const { data: recoveryToday } = await supabase
-    .from('whoop_recovery')
-    .select('score, date')
-    .eq('user_id', user.id)
-    .order('date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const [{ data: recoveryToday }, { data: ouraToday }] = await Promise.all([
+    supabase
+      .from('whoop_recovery')
+      .select('score, date')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('oura_readiness')
+      .select('score, date')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
 
-  const todayRecovery =
+  const whoopToday =
     recoveryToday && recoveryToday.date === today ? recoveryToday.score : null
+  const ouraScore =
+    ouraToday && ouraToday.date === today ? ouraToday.score : null
+  const todayRecovery = whoopToday ?? ouraScore
 
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
   const { data: completions } = await supabase
@@ -40,6 +52,12 @@ export default async function TrainingPage() {
   const completionDates = (completions ?? []).map((r) => r.date)
   const streak = computeStreak(completionDates)
   const completedSet = completionDates
+
+  const isMonday = new Date().getDay() === 1
+  const monday = weekStartMonday()
+  const planFromPriorWeek =
+    !!latest?.created_at && new Date(latest.created_at) < monday
+  const showAutoReplan = isMonday && planFromPriorWeek
 
   const goal = getGoal(user.user_metadata?.goal)
 
@@ -60,6 +78,7 @@ export default async function TrainingPage() {
         todayRecovery={todayRecovery}
         completedDates={completedSet}
         streak={streak}
+        showAutoReplan={showAutoReplan}
       />
     </>
   )

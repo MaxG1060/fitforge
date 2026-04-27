@@ -5,13 +5,14 @@ import { useToast } from '@/components/ToastProvider'
 import {
   disconnectStrava,
   disconnectWhoop,
+  disconnectOura,
   resetOnboarding,
   deleteAccount,
 } from '@/app/actions/settings'
 import GoalCard from '@/components/GoalCard'
 import MealSettingsCard from '@/components/MealSettingsCard'
 
-export default function SettingsClient({ email, createdAt, onboardedAt, strava, whoopConnected, goalId, mealGoalId, restrictionIds }) {
+export default function SettingsClient({ email, createdAt, onboardedAt, strava, whoopConnected, ouraConnected, goalId, mealGoalId, restrictionIds }) {
   const toast = useToast()
   const [pending, start] = useTransition()
   const [confirming, setConfirming] = useState(null)
@@ -67,6 +68,17 @@ export default function SettingsClient({ email, createdAt, onboardedAt, strava, 
           pending={pending}
           confirming={confirming === 'whoop'}
           setConfirming={() => setConfirming(confirming === 'whoop' ? null : 'whoop')}
+        />
+        <IntegrationRow
+          label="Oura"
+          accent="#8b5cf6"
+          desc={ouraConnected ? 'Connected' : 'Pull readiness and sleep scores'}
+          connected={ouraConnected}
+          connectHref="/api/oura/connect"
+          onDisconnect={run(disconnectOura, 'Oura disconnected.')}
+          pending={pending}
+          confirming={confirming === 'oura'}
+          setConfirming={() => setConfirming(confirming === 'oura' ? null : 'oura')}
         />
       </Section>
 

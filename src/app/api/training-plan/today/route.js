@@ -4,9 +4,9 @@ import { getGoal } from '@/lib/goals'
 
 function recoveryGuidance(score) {
   if (score == null) return 'Recovery unknown — keep the planned session as written.'
-  if (score >= 67) return `WHOOP recovery is GREEN (${score}%). Athlete is ready — keep volume and intensity as planned, or push slightly. Do NOT dial back.`
-  if (score >= 34) return `WHOOP recovery is YELLOW (${score}%). Keep the same sport but trim total volume by ~15-25%, hold intensity moderate, prioritize quality reps over fatigue. Add a clear "tuned for yellow recovery" coaching note.`
-  return `WHOOP recovery is RED (${score}%). Keep the same sport but make this an active-recovery / deload session: ~50% normal volume, low intensity, technique focus only. Add a clear "tuned for red recovery — easy day" coaching note.`
+  if (score >= 67) return `Recovery is GREEN (${score}%). Athlete is ready — keep volume and intensity as planned, or push slightly. Do NOT dial back.`
+  if (score >= 34) return `Recovery is YELLOW (${score}%). Keep the same sport but trim total volume by ~15-25%, hold intensity moderate, prioritize quality reps over fatigue. Add a clear "tuned for yellow recovery" coaching note.`
+  return `Recovery is RED (${score}%). Keep the same sport but make this an active-recovery / deload session: ~50% normal volume, low intensity, technique focus only. Add a clear "tuned for red recovery — easy day" coaching note.`
 }
 
 export async function POST(request) {

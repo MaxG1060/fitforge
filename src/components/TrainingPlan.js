@@ -176,7 +176,7 @@ function splitDays(plan) {
   }
 }
 
-export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery, completedDates = [], streak = 0 }) {
+export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery, completedDates = [], streak = 0, showAutoReplan = false }) {
   const toast = useToast()
   const router = useRouter()
   const [plan, setPlan] = useState(savedPlan ?? null)
@@ -187,6 +187,9 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
   const [swapBusyIdx, setSwapBusyIdx] = useState(null)
   const [tuneBusyIdx, setTuneBusyIdx] = useState(null)
   const [completionBusy, setCompletionBusy] = useState(null)
+  const [replanLoading, setReplanLoading] = useState(false)
+  const [replanDismissed, setReplanDismissed] = useState(false)
+  const [lastSummary, setLastSummary] = useState(null)
   const [, startTransition] = useTransition()
   const completedSet = new Set(completedDates)
 
@@ -217,6 +220,27 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
       toast.error(e.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function autoReplan() {
+    setReplanLoading(true)
+    try {
+      const res = await fetch('/api/training-plan/auto-replan', { method: 'POST' })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setPlan(data.plan)
+      setGeneratedAt(new Date().toISOString())
+      setLastSummary(data.summary ?? null)
+      const s = data.summary
+      const bits = []
+      if (s?.completionRate != null) bits.push(`${s.completedCount}/${s.plannedDays} done`)
+      if (s?.avgRecovery != null) bits.push(`avg recovery ${s.avgRecovery}%`)
+      toast.success(`Plan adapted${bits.length ? ` · ${bits.join(' · ')}` : ''}.`)
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setReplanLoading(false)
     }
   }
 
@@ -364,6 +388,57 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
         {goalLabel ?? 'Personal goal'} · tailored to your recent Strava activity
         {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
       </p>
+
+      {showAutoReplan && !replanDismissed && (
+        <div className="mb-5 rounded-lg border border-orange-500/40 bg-orange-500/5 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-400">Monday auto-replan</p>
+              <p className="mt-1 text-sm text-zinc-200">
+                Adapt this week to last week&apos;s completion, WHOOP recovery, and recent activity.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setReplanDismissed(true)}
+                disabled={replanLoading}
+                className="rounded-md border border-zinc-800 px-2.5 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 disabled:opacity-50 transition-colors"
+              >
+                Later
+              </button>
+              <button
+                onClick={autoReplan}
+                disabled={replanLoading}
+                className="rounded-md bg-orange-500 px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
+              >
+                {replanLoading ? 'Adapting…' : 'Auto-replan'}
+              </button>
+            </div>
+          </div>
+          {lastSummary && (
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-md border border-zinc-800 bg-black/40 p-2">
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-500">Last week</p>
+                <p className="mt-1 text-sm font-bold text-white tabular-nums">
+                  {lastSummary.completedCount}/{lastSummary.plannedDays}
+                </p>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-black/40 p-2">
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-500">Avg recovery</p>
+                <p className="mt-1 text-sm font-bold text-white tabular-nums">
+                  {lastSummary.avgRecovery != null ? `${lastSummary.avgRecovery}%` : '—'}
+                </p>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-black/40 p-2">
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-500">Trend</p>
+                <p className="mt-1 text-sm font-bold text-white capitalize">
+                  {lastSummary.recoveryTrend ?? '—'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mb-5">
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2.5">Sports this week</p>

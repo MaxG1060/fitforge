@@ -30,6 +30,15 @@ export async function disconnectWhoop() {
   return { ok: true }
 }
 
+export async function disconnectOura() {
+  const { supabase, user } = await getUser()
+  const { error } = await supabase.from('oura_tokens').delete().eq('user_id', user.id)
+  if (error) return { error: error.message }
+  revalidatePath('/settings')
+  revalidatePath('/dashboard')
+  return { ok: true }
+}
+
 export async function resetOnboarding() {
   const { supabase } = await getUser()
   await supabase.auth.updateUser({ data: { onboarded_at: null } })
