@@ -28,7 +28,7 @@ export default function BodyMetricsForm({ latest }) {
   }, [state, toast])
 
   return (
-    <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6">
+    <div id="body-metrics-form" className="rounded-lg border border-zinc-900 bg-zinc-950 p-6 scroll-mt-20">
       <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">Log Metrics</p>
       <h3 className="text-xl font-black tracking-tight mb-1">Body</h3>
       <p className="text-sm text-zinc-500 mb-4">

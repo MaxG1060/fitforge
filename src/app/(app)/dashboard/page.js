@@ -3,6 +3,7 @@ import BodyMetricsForm from '@/components/BodyMetricsForm'
 import TrendChart from '@/components/TrendChart'
 import StravaWorkouts from '@/components/StravaWorkouts'
 import WhoopWidget from '@/components/WhoopWidget'
+import OnboardingCard from '@/components/OnboardingCard'
 import { getValidAccessToken, fetchAthlete } from '@/lib/strava'
 
 export default async function DashboardPage() {
@@ -77,6 +78,13 @@ export default async function DashboardPage() {
           Welcome back{firstname ? `, ${firstname}` : ''}
         </h2>
       </div>
+
+      <OnboardingCard
+        stravaConnected={!!stravaToken}
+        whoopConnected={!!whoopToken}
+        hasBodyMetric={history.length > 0}
+        firstname={firstname}
+      />
 
       <WhoopWidget
         connected={!!whoopToken}
