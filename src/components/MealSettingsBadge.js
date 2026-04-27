@@ -69,12 +69,7 @@ export default function MealSettingsBadge({ initialMealGoal, initialRestrictions
         <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
         <span className="flex flex-col leading-tight min-w-0">
           <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-500">Diet</span>
-          <span className="text-sm font-bold text-white truncate">
-            {goal.label}
-            {restrictionLabels.length > 0 && (
-              <span className="text-zinc-500 font-normal"> · {restrictionLabels.join(', ')}</span>
-            )}
-          </span>
+          <span className="text-sm font-bold text-white truncate">{goal.label}</span>
         </span>
         <span className="hidden group-hover:inline text-[9px] font-bold tracking-[0.15em] uppercase text-white transition-colors">
           Change

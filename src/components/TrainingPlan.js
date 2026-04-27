@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useToast } from './ToastProvider'
 import Markdown from './Markdown'
 import SportIcon, { pickIconType } from './SportIcon'
+import { lookupExercise, youtubeSearchUrl } from '@/lib/exercises'
 
 const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
 const SWAP_SPORTS = [...SPORTS, 'Rest']
@@ -270,7 +271,7 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
                   </div>
                 )}
 
-                <Markdown content={day.body} accent="#f97316" />
+                <DayBody body={day.body} dayKey={i} />
               </section>
             )
           })}
@@ -282,6 +283,156 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
       )}
     </div>
   )
+}
+
+function parseExerciseBullet(line) {
+  const stripped = line.replace(/^[-*]\s+/, '')
+  const dashSplit = stripped.split(/\s+—\s+|\s+--\s+|\s+-\s+/)
+  if (dashSplit.length >= 2) {
+    const head = dashSplit[0].trim()
+    const cue = dashSplit.slice(1).join(' — ').trim()
+    const colonIdx = head.indexOf(':')
+    const name = colonIdx >= 0 ? head.slice(0, colonIdx).trim() : head
+    const spec = colonIdx >= 0 ? head.slice(colonIdx + 1).trim() : ''
+    return { name, spec, cue }
+  }
+  const colonIdx = stripped.indexOf(':')
+  if (colonIdx >= 0) {
+    return { name: stripped.slice(0, colonIdx).trim(), spec: stripped.slice(colonIdx + 1).trim(), cue: '' }
+  }
+  return { name: stripped.trim(), spec: '', cue: '' }
+}
+
+function renderInlineMd(text, keyPrefix) {
+  const parts = []
+  const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g
+  let last = 0
+  let i = 0
+  let m
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index))
+    if (m[1]) parts.push(<strong key={`${keyPrefix}-${i++}`} className="font-bold text-white">{m[1]}</strong>)
+    else if (m[2]) parts.push(<em key={`${keyPrefix}-${i++}`} className="italic text-zinc-300">{m[2]}</em>)
+    last = m.index + m[0].length
+  }
+  if (last < text.length) parts.push(text.slice(last))
+  return parts
+}
+
+function ExerciseRow({ name, spec, cue, rowKey }) {
+  const [open, setOpen] = useState(false)
+  const dict = lookupExercise(name)
+  const hasDetails = !!(cue || dict)
+
+  return (
+    <li className="rounded-md">
+      <button
+        type="button"
+        onClick={() => hasDetails && setOpen((v) => !v)}
+        disabled={!hasDetails}
+        className={`w-full flex items-start gap-2.5 text-left text-sm leading-relaxed py-1 ${
+          hasDetails ? 'hover:text-white text-zinc-300 cursor-pointer' : 'text-zinc-300 cursor-default'
+        }`}
+      >
+        <span className="mt-2 h-1 w-1 rounded-full shrink-0 bg-orange-500" />
+        <span className="flex-1 min-w-0">
+          <span className="font-medium text-white">{name}</span>
+          {spec && <span className="text-zinc-300">: {spec}</span>}
+        </span>
+        {hasDetails && (
+          <span className={`mt-1 text-zinc-500 text-xs transition-transform shrink-0 ${open ? 'rotate-90' : ''}`}>
+            ›
+          </span>
+        )}
+      </button>
+
+      {open && hasDetails && (
+        <div className="ml-3.5 mt-1 mb-2 rounded-md border border-zinc-900 bg-black/40 p-3 text-xs space-y-2">
+          {dict?.muscles && (
+            <div>
+              <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500">Targets</span>
+              <p className="mt-0.5 text-zinc-300">{dict.muscles}</p>
+            </div>
+          )}
+          {cue && (
+            <div>
+              <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500">Coach&apos;s cue</span>
+              <p className="mt-0.5 text-zinc-300 leading-relaxed">{renderInlineMd(cue, `cue-${rowKey}`)}</p>
+            </div>
+          )}
+          {dict?.cue && dict.cue !== cue && (
+            <div>
+              <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500">Form check</span>
+              <p className="mt-0.5 text-zinc-300 leading-relaxed">{dict.cue}</p>
+            </div>
+          )}
+          {dict?.sub && (
+            <div>
+              <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500">Easier sub</span>
+              <p className="mt-0.5 text-zinc-300">{dict.sub}</p>
+            </div>
+          )}
+          <a
+            href={youtubeSearchUrl(name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[10px] font-bold tracking-[0.15em] uppercase text-orange-500 hover:text-orange-400"
+          >
+            Watch demo ↗
+          </a>
+        </div>
+      )}
+    </li>
+  )
+}
+
+function DayBody({ body, dayKey }) {
+  if (!body) return null
+  const lines = body.split('\n')
+  const blocks = []
+  let bullets = []
+  let blockKey = 0
+
+  function flushBullets() {
+    if (bullets.length === 0) return
+    const items = bullets
+    blocks.push(
+      <ul key={`ul-${dayKey}-${blockKey++}`} className="space-y-0.5">
+        {items.map((b, i) => {
+          const parsed = parseExerciseBullet(b)
+          return <ExerciseRow key={i} rowKey={`${dayKey}-${blockKey}-${i}`} {...parsed} />
+        })}
+      </ul>
+    )
+    bullets = []
+  }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd()
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      bullets.push(line)
+      continue
+    }
+    if (/^-{3,}\s*$/.test(line)) continue
+    flushBullets()
+    if (line.trim() === '') continue
+    if (line.startsWith('### ')) {
+      blocks.push(
+        <h4 key={`h-${dayKey}-${blockKey++}`} className="text-sm font-bold text-zinc-100 mt-3 mb-1 tracking-tight">
+          {renderInlineMd(line.slice(4).trim(), `h-${dayKey}-${blockKey}`)}
+        </h4>
+      )
+      continue
+    }
+    blocks.push(
+      <p key={`p-${dayKey}-${blockKey++}`} className="text-sm text-zinc-400 leading-relaxed">
+        {renderInlineMd(line, `p-${dayKey}-${blockKey}`)}
+      </p>
+    )
+  }
+  flushBullets()
+
+  return <div className="space-y-2">{blocks}</div>
 }
 
 function formatWhen(iso) {

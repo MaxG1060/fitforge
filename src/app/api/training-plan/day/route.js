@@ -34,7 +34,14 @@ export async function POST(request) {
     system: [
       {
         type: 'text',
-        text: `You are a sports performance coach. Generate a single day's training session as part of a weekly plan. Format your response as clean markdown starting with the day name and session focus as a ## heading (e.g. "## Tuesday — Tempo Run"). Then list the warm-up, main work, and cool-down as bullets. Keep it concise and practical. Primary goal: ${goal.coachPrompt}. No preamble — start directly with the ## heading.`,
+        text: `You are a sports performance coach. Generate a single day's training session as part of a weekly plan. Format your response as clean markdown starting with the day name and session focus as a ## heading (e.g. "## Tuesday — Tempo Run"). Then list the warm-up, main work, and cool-down as bullets. Keep it concise and practical. Primary goal: ${goal.coachPrompt}.
+
+EXERCISE BULLET FORMAT — every exercise bullet MUST follow this pattern, with " — " (space em-dash space) as the separator:
+- {Exercise name}: {sets × reps or duration} — {one short form cue, max 12 words}
+
+Example: "- Goblet squats: 4 × 10 — sit hips back, drive through midfoot, full depth."
+
+Do NOT use the em-dash inside the exercise name itself. No preamble — start directly with the ## heading.`,
         cache_control: { type: 'ephemeral' },
       },
     ],
