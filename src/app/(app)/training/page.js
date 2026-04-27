@@ -61,6 +61,14 @@ export default async function TrainingPage() {
 
   const goal = getGoal(user.user_metadata?.goal)
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username, is_public')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const shareUsername = profile?.is_public ? profile.username : null
+  const shareBaseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+
   return (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -79,6 +87,8 @@ export default async function TrainingPage() {
         completedDates={completedSet}
         streak={streak}
         showAutoReplan={showAutoReplan}
+        shareUsername={shareUsername}
+        shareBaseUrl={shareBaseUrl}
       />
     </>
   )

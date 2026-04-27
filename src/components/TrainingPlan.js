@@ -176,7 +176,7 @@ function splitDays(plan) {
   }
 }
 
-export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery, completedDates = [], streak = 0, showAutoReplan = false }) {
+export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery, completedDates = [], streak = 0, showAutoReplan = false, shareUsername = null, shareBaseUrl = '' }) {
   const toast = useToast()
   const router = useRouter()
   const [plan, setPlan] = useState(savedPlan ?? null)
@@ -375,6 +375,22 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
             <span className="tabular-nums">{streak}</span>
             <span>day streak</span>
           </span>
+          {shareUsername && (
+            <button
+              onClick={async () => {
+                const url = `${shareBaseUrl}/u/${shareUsername}`
+                try {
+                  await navigator.clipboard.writeText(url)
+                  toast.success('Link copied.')
+                } catch {
+                  toast.error('Could not copy.')
+                }
+              }}
+              className="rounded-md border border-zinc-800 bg-transparent px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 transition-colors"
+            >
+              Share
+            </button>
+          )}
           <button
             onClick={generate}
             disabled={loading}
