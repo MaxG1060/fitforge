@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import TrainingPlan from '@/components/TrainingPlan'
+import GoalCard from '@/components/GoalCard'
+import { getGoal } from '@/lib/goals'
 
 export default async function TrainingPage() {
   const supabase = await createClient()
@@ -14,6 +16,8 @@ export default async function TrainingPage() {
     .limit(1)
     .maybeSingle()
 
+  const goal = getGoal(user.user_metadata?.goal)
+
   return (
     <>
       <div>
@@ -21,7 +25,8 @@ export default async function TrainingPage() {
         <h2 className="mt-1 text-3xl font-black tracking-tight">Training Plan</h2>
         <p className="mt-2 text-sm text-zinc-500">Generated weekly, tailored to your sport mix and recent activity.</p>
       </div>
-      <TrainingPlan savedPlan={latest?.content} savedAt={latest?.created_at} />
+      <GoalCard initialGoalId={goal.id} />
+      <TrainingPlan savedPlan={latest?.content} savedAt={latest?.created_at} goalLabel={goal.label} />
     </>
   )
 }

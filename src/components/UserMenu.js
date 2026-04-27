@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { signOut } from '@/app/actions/auth'
 
 export default function UserMenu({ email, profileUrl }) {
@@ -52,10 +53,17 @@ export default function UserMenu({ email, profileUrl }) {
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Signed in as</p>
             <p className="mt-1 text-sm text-white truncate">{email}</p>
           </div>
+          <Link
+            href="/settings"
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-3 py-2.5 text-xs font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 hover:text-white transition-colors"
+          >
+            Settings
+          </Link>
           <form action={signOut}>
             <button
               type="submit"
-              className="w-full text-left px-3 py-2.5 text-xs font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 hover:text-white transition-colors"
+              className="w-full text-left px-3 py-2.5 text-xs font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 hover:text-white transition-colors border-t border-zinc-900"
             >
               Sign out
             </button>

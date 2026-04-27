@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { completeOnboarding, logStartingWeight } from '@/app/actions/onboarding'
+import { completeOnboarding, logStartingWeight, setGoal } from '@/app/actions/onboarding'
 import { useToast } from '@/components/ToastProvider'
+import GoalPicker from '@/components/GoalPicker'
+import { DEFAULT_GOAL_ID } from '@/lib/goals'
 
-export default function OnboardingWizard({ firstname, stravaConnected, whoopConnected, hasBodyMetric }) {
+export default function OnboardingWizard({ firstname, initialGoal, stravaConnected, whoopConnected, hasBodyMetric }) {
   const router = useRouter()
   const toast = useToast()
   const [step, setStep] = useState(0)
+  const [goal, setGoalState] = useState(initialGoal ?? DEFAULT_GOAL_ID)
   const [weight, setWeight] = useState('')
   const [busy, setBusy] = useState(false)
   const [bodyDone, setBodyDone] = useState(hasBodyMetric)
@@ -17,6 +20,17 @@ export default function OnboardingWizard({ firstname, stravaConnected, whoopConn
     setBusy(true)
     await completeOnboarding()
     router.replace('/dashboard')
+  }
+
+  async function saveGoalAndContinue() {
+    setBusy(true)
+    const res = await setGoal(goal)
+    setBusy(false)
+    if (res?.error) {
+      toast.error(res.error)
+      return
+    }
+    setStep(2)
   }
 
   async function saveWeight(e) {
@@ -33,7 +47,7 @@ export default function OnboardingWizard({ firstname, stravaConnected, whoopConn
     }
     setBodyDone(true)
     toast.success('Logged.')
-    setStep(3)
+    setStep(4)
   }
 
   return (
@@ -58,7 +72,7 @@ export default function OnboardingWizard({ firstname, stravaConnected, whoopConn
 
       <main className="flex-1 flex items-center justify-center px-4 py-6">
         <div className="w-full max-w-md">
-          <Stepper step={step} total={4} />
+          <Stepper step={step} total={5} />
 
           {step === 0 && (
             <div className="mt-8 text-center">
@@ -69,7 +83,7 @@ export default function OnboardingWizard({ firstname, stravaConnected, whoopConn
               <p className="mt-4 text-zinc-400">
                 FitForge pulls your training, recovery, and body data into one place — and turns it into a weekly plan that actually fits your life.
               </p>
-              <p className="mt-3 text-zinc-500 text-sm">Let&apos;s set you up in three quick steps.</p>
+              <p className="mt-3 text-zinc-500 text-sm">Let&apos;s set you up in four quick steps.</p>
               <button
                 onClick={() => setStep(1)}
                 className="mt-8 w-full rounded-md bg-orange-500 px-4 py-3 text-xs font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 transition-colors"
@@ -80,32 +94,63 @@ export default function OnboardingWizard({ firstname, stravaConnected, whoopConn
           )}
 
           {step === 1 && (
-            <SetupStep
-              eyebrow="Step 1 of 3"
-              title="Connect Strava"
-              desc="We auto-import your runs, rides, and workouts so you don't have to log them by hand."
-              done={stravaConnected}
-              connectHref="/api/strava/connect"
-              onSkip={() => setStep(2)}
-              onBack={() => setStep(0)}
-            />
+            <div className="mt-8">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500">Step 1 of 4</p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight">What&apos;s your goal?</h2>
+              <p className="mt-3 text-zinc-400">
+                We&apos;ll tune your weekly plan around this. You can change it any time in Settings.
+              </p>
+
+              <div className="mt-6">
+                <GoalPicker value={goal} onChange={setGoalState} disabled={busy} />
+              </div>
+
+              <div className="mt-6 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => setStep(0)}
+                  disabled={busy}
+                  className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-500 hover:text-white disabled:opacity-50"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={saveGoalAndContinue}
+                  disabled={busy}
+                  className="rounded-md bg-orange-500 px-4 py-2.5 text-[10px] font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
+                >
+                  {busy ? 'Saving…' : 'Continue →'}
+                </button>
+              </div>
+            </div>
           )}
 
           {step === 2 && (
             <SetupStep
-              eyebrow="Step 2 of 3"
-              title="Connect WHOOP"
-              desc="Pull recovery, sleep, and strain into your dashboard. Your weekly training plan adapts to it."
-              done={whoopConnected}
-              connectHref="/api/whoop/connect"
+              eyebrow="Step 2 of 4"
+              title="Connect Strava"
+              desc="We auto-import your runs, rides, and workouts so you don't have to log them by hand."
+              done={stravaConnected}
+              connectHref="/api/strava/connect"
               onSkip={() => setStep(3)}
               onBack={() => setStep(1)}
             />
           )}
 
           {step === 3 && (
+            <SetupStep
+              eyebrow="Step 3 of 4"
+              title="Connect WHOOP"
+              desc="Pull recovery, sleep, and strain into your dashboard. Your weekly training plan adapts to it."
+              done={whoopConnected}
+              connectHref="/api/whoop/connect"
+              onSkip={() => setStep(4)}
+              onBack={() => setStep(2)}
+            />
+          )}
+
+          {step === 4 && (
             <div className="mt-8">
-              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500">Step 3 of 3</p>
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500">Step 4 of 4</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight">Log your starting weight</h2>
               <p className="mt-3 text-zinc-400">
                 Even one number gives us a baseline. You can update it any time from the dashboard.
@@ -145,7 +190,7 @@ export default function OnboardingWizard({ firstname, stravaConnected, whoopConn
               )}
 
               <div className="mt-4 flex items-center justify-between text-[10px] font-bold tracking-[0.15em] uppercase">
-                <button onClick={() => setStep(2)} className="text-zinc-500 hover:text-white">
+                <button onClick={() => setStep(3)} className="text-zinc-500 hover:text-white">
                   ← Back
                 </button>
                 <button onClick={finish} disabled={busy} className="text-zinc-400 hover:text-white disabled:opacity-50">

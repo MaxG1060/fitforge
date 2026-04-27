@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { getGoal } from '@/lib/goals'
 
 export async function POST(request) {
   const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
@@ -13,6 +14,8 @@ export async function POST(request) {
     if (Array.isArray(body?.sports)) sports = body.sports.filter((s) => typeof s === 'string')
   } catch {}
   if (sports.length === 0) sports = ['Gym', 'Running']
+
+  const goal = getGoal(user.user_metadata?.goal)
 
   const { data: metrics } = await supabase
     .from('body_metrics')
@@ -50,7 +53,7 @@ export async function POST(request) {
     system: [
       {
         type: 'text',
-        text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown: use ## for each day (e.g. ## Monday — Upper Body), bullet points for exercises with sets × reps, and a brief coaching note per session. Goals: functional fitness + fat loss. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder. Reference their recent activity in the weekly focus note. No preamble — start directly with Monday.`,
+        text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown: use ## for each day (e.g. ## Monday — Upper Body), bullet points for exercises with sets × reps, and a brief coaching note per session. Primary goal: ${goal.coachPrompt}. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups in service of the goal. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder. Reference their recent activity in the weekly focus note. No preamble — start directly with Monday.`,
         cache_control: { type: 'ephemeral' },
       },
     ],

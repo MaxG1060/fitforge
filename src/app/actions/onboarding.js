@@ -1,6 +1,19 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { GOALS } from '@/lib/goals'
+import { revalidatePath } from 'next/cache'
+
+export async function setGoal(goalId) {
+  const supabase = await createClient()
+  const valid = GOALS.some((g) => g.id === goalId)
+  if (!valid) return { error: 'Invalid goal' }
+  const { error } = await supabase.auth.updateUser({ data: { goal: goalId } })
+  if (error) return { error: error.message }
+  revalidatePath('/training')
+  revalidatePath('/settings')
+  return { ok: true }
+}
 
 export async function completeOnboarding() {
   const supabase = await createClient()

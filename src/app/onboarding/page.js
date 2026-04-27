@@ -14,10 +14,12 @@ export default async function OnboardingPage() {
   ])
 
   const firstname = user.user_metadata?.firstname ?? null
+  const goal = user.user_metadata?.goal ?? null
 
   return (
     <OnboardingWizard
       firstname={firstname}
+      initialGoal={goal}
       stravaConnected={!!stravaToken}
       whoopConnected={!!whoopToken}
       hasBodyMetric={!!bodyMetric}

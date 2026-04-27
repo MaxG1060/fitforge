@@ -45,7 +45,7 @@ function splitDays(plan) {
   }
 }
 
-export default function TrainingPlan({ savedPlan, savedAt }) {
+export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
   const toast = useToast()
   const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
@@ -140,7 +140,7 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
         </button>
       </div>
       <p className="text-sm text-zinc-500 mb-5">
-        Functional fitness + fat loss · tailored to your recent Strava activity
+        {goalLabel ?? 'Personal goal'} · tailored to your recent Strava activity
         {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
       </p>
 

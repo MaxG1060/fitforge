@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { getGoal } from '@/lib/goals'
 
 export async function POST(request) {
   const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
@@ -9,6 +10,8 @@ export async function POST(request) {
 
   const { dayTitle, sport, otherDays } = await request.json()
   if (!dayTitle || !sport) return Response.json({ error: 'Missing dayTitle or sport' }, { status: 400 })
+
+  const goal = getGoal(user.user_metadata?.goal)
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const { data: recentWorkouts } = await supabase
@@ -31,7 +34,7 @@ export async function POST(request) {
     system: [
       {
         type: 'text',
-        text: `You are a sports performance coach. Generate a single day's training session as part of a weekly plan. Format your response as clean markdown starting with the day name and session focus as a ## heading (e.g. "## Tuesday — Tempo Run"). Then list the warm-up, main work, and cool-down as bullets. Keep it concise and practical. No preamble — start directly with the ## heading.`,
+        text: `You are a sports performance coach. Generate a single day's training session as part of a weekly plan. Format your response as clean markdown starting with the day name and session focus as a ## heading (e.g. "## Tuesday — Tempo Run"). Then list the warm-up, main work, and cool-down as bullets. Keep it concise and practical. Primary goal: ${goal.coachPrompt}. No preamble — start directly with the ## heading.`,
         cache_control: { type: 'ephemeral' },
       },
     ],
