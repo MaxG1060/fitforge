@@ -47,7 +47,7 @@ export default function GoalBadge({ initialGoalId }) {
           <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-500">Goal</span>
           <span className="text-sm font-bold text-white truncate">{goal.label}</span>
         </span>
-        <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-zinc-500 group-hover:text-white transition-colors">
+        <span className="hidden group-hover:inline text-[9px] font-bold tracking-[0.15em] uppercase text-white transition-colors">
           Change
         </span>
       </button>

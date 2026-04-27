@@ -6,13 +6,16 @@ import Markdown from './Markdown'
 
 const ACCENT = '#10b981'
 
+function isTotalsTitle(title) {
+  return /(daily\s*totals?|totals?|macros?\s*summary|daily\s*macros?)/i.test(title)
+}
+
 function splitMeals(plan) {
-  if (!plan) return { intro: '', meals: [], outro: '' }
+  if (!plan) return { intro: '', meals: [], totals: null }
   const lines = plan.split('\n')
   const meals = []
   let current = null
   let intro = []
-  let afterAll = []
   let seenMeal = false
 
   for (const line of lines) {
@@ -28,14 +31,44 @@ function splitMeals(plan) {
   }
   if (current) meals.push(current)
 
+  let totals = null
+  const lastIdx = meals.length - 1
+  if (lastIdx >= 0 && isTotalsTitle(meals[lastIdx].title)) {
+    const t = meals.pop()
+    totals = { title: t.title, body: t.bodyLines.join('\n').trim() }
+  }
+
   return {
     intro: intro.join('\n').trim(),
     meals: meals.map((m) => ({ title: m.title, body: m.bodyLines.join('\n').trim() })),
-    outro: afterAll.join('\n').trim(),
+    totals,
   }
 }
 
-function joinMeals({ intro, meals }) {
+function parseTotals(body) {
+  if (!body) return { rows: [], note: '' }
+  const lines = body.split('\n')
+  const rows = []
+  const noteLines = []
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) continue
+    if (line.startsWith('|')) {
+      const cells = line.split('|').map((c) => c.trim()).filter((c) => c.length > 0)
+      if (cells.length < 2) continue
+      if (/^[-:\s]+$/.test(cells[0]) && /^[-:\s]+$/.test(cells[1])) continue
+      if (/^macro$/i.test(cells[0]) && /^amount$/i.test(cells[1])) continue
+      const label = cells[0].replace(/\*\*/g, '').trim()
+      const value = cells[1].replace(/✅|✔️/g, '').trim()
+      rows.push({ label, value })
+    } else {
+      noteLines.push(raw)
+    }
+  }
+  return { rows, note: noteLines.join('\n').trim() }
+}
+
+function joinMeals({ intro, meals, totals }) {
   const parts = []
   if (intro) parts.push(intro, '')
   for (const m of meals) {
@@ -43,10 +76,15 @@ function joinMeals({ intro, meals }) {
     if (m.body) parts.push(m.body)
     parts.push('')
   }
+  if (totals) {
+    parts.push(`## ${totals.title}`)
+    if (totals.body) parts.push(totals.body)
+    parts.push('')
+  }
   return parts.join('\n').trim()
 }
 
-export default function MealPlan({ savedPlan, savedAt }) {
+export default function MealPlan({ savedPlan, savedAt, dietSummary }) {
   const toast = useToast()
   const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
@@ -194,7 +232,7 @@ export default function MealPlan({ savedPlan, savedAt }) {
         </button>
       </div>
       <p className="text-sm text-zinc-500 mb-5">
-        5 high-protein meals · 2.5g protein/kg · batch-cook ready
+        {dietSummary || '5 high-protein meals · 2.5g protein/kg · batch-cook ready'}
         {generatedAt && ` · generated ${formatWhen(generatedAt)}`}
       </p>
 
@@ -212,7 +250,7 @@ export default function MealPlan({ savedPlan, savedAt }) {
           {parsed.meals.map((meal, i) => (
             <section key={i} className="rounded-lg border border-zinc-900 bg-black/40 p-4">
               <div className="flex items-start justify-between gap-3 mb-3">
-                <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: ACCENT }}>
+                <h3 className="text-base font-black tracking-tight" style={{ color: ACCENT }}>
                   {meal.title}
                 </h3>
                 <div className="flex gap-1.5 shrink-0">
@@ -236,6 +274,7 @@ export default function MealPlan({ savedPlan, savedAt }) {
               <Markdown content={meal.body} accent={ACCENT} />
             </section>
           ))}
+          {parsed.totals && <TotalsCard totals={parsed.totals} />}
         </div>
       )}
 
@@ -289,6 +328,49 @@ export default function MealPlan({ savedPlan, savedAt }) {
       )}
     </div>
   )
+}
+
+function TotalsCard({ totals }) {
+  const { rows, note } = parseTotals(totals.body)
+  return (
+    <section className="rounded-lg border border-emerald-900/40 bg-emerald-950/10 p-4">
+      <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3" style={{ color: ACCENT }}>
+        {totals.title}
+      </p>
+      {rows.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {rows.map((r, i) => (
+            <div key={i} className="rounded-md bg-black/40 border border-zinc-900 p-3">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">{r.label}</p>
+              <p className="mt-1 text-base font-black tracking-tight text-white">{r.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <Markdown content={totals.body} accent={ACCENT} />
+      )}
+      {note && (
+        <p className="mt-3 text-sm text-zinc-400 leading-relaxed">
+          {renderInlineMarkdown(note)}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function renderInlineMarkdown(text) {
+  const parts = []
+  const regex = /\*\*(.+?)\*\*/g
+  let last = 0
+  let i = 0
+  let m
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index))
+    parts.push(<strong key={i++} className="font-bold text-white">{m[1]}</strong>)
+    last = m.index + m[0].length
+  }
+  if (last < text.length) parts.push(text.slice(last))
+  return parts
 }
 
 function formatWhen(iso) {

@@ -53,7 +53,7 @@ export async function POST(request) {
     system: [
       {
         type: 'text',
-        text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown: use ## for each day (e.g. ## Monday — Upper Body), bullet points for exercises with sets × reps, and a brief coaching note per session. Primary goal: ${goal.coachPrompt}. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups in service of the goal. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder. Reference their recent activity in the weekly focus note. No preamble — start directly with Monday.`,
+        text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown. Start with a "## Weekly focus" heading containing 2-4 sentences that reference the athlete's recent activity and explain how this week's sport mix fits. Then list each day Monday through Sunday as its own ## heading (e.g. "## Monday — Upper Body") with bullet points for exercises (sets × reps) and a brief coaching note per session. Primary goal: ${goal.coachPrompt}. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups in service of the goal. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder. No preamble — start directly with "## Weekly focus".`,
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -67,7 +67,7 @@ Sports to include this week: ${sports.join(', ')}. Build the plan around these o
 Recent activity (last 14 days from Strava):
 ${workoutSummary}
 
-Pick a sensible number of training days (typically 3–5) with appropriate rest/active recovery. End with a "Weekly focus" note that briefly references the recent training load and explains how this week's sport mix fits.`,
+Pick a sensible number of training days (typically 3–5) with appropriate rest/active recovery. Start the response with the "## Weekly focus" section, then list days Monday through Sunday.`,
       },
     ],
   })

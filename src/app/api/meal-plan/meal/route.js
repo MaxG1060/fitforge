@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { buildDietPrompt } from '@/lib/diet'
 
 export async function POST(request) {
   const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
@@ -20,6 +21,10 @@ export async function POST(request) {
 
   const weightKg = metrics?.weight_kg ?? 80
   const proteinTarget = Math.round(weightKg * 2.5)
+  const dietPrompt = buildDietPrompt(
+    user.user_metadata?.meal_goal,
+    user.user_metadata?.dietary_restrictions,
+  )
 
   const otherMealsList = (otherMeals ?? []).map((m, i) => `${i + 1}. ${m.title}`).join('\n') || 'none'
 
@@ -29,7 +34,7 @@ export async function POST(request) {
     system: [
       {
         type: 'text',
-        text: `You are a sports nutrition expert. Generate a single high-protein meal as part of a 5-meal Sunday prep plan. Format your response as clean markdown starting with the meal name as a ## heading. Include: ingredients list, brief prep instructions, and macros (calories, protein, carbs, fat). The meal must be different from the others in the plan and avoid the same primary protein source where possible. No preamble — start directly with the ## heading.`,
+        text: `You are a sports nutrition expert. Generate a single meal as part of a 5-meal Sunday prep plan. ${dietPrompt} Format your response as clean markdown starting with the meal name as a ## heading. Include: ingredients list, brief prep instructions, and macros (calories, protein, carbs, fat). The meal must be different from the others in the plan and avoid the same primary protein source where possible. Honor every dietary requirement strictly. No preamble — start directly with the ## heading.`,
         cache_control: { type: 'ephemeral' },
       },
     ],

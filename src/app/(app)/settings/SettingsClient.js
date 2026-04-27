@@ -9,8 +9,9 @@ import {
   deleteAccount,
 } from '@/app/actions/settings'
 import GoalCard from '@/components/GoalCard'
+import MealSettingsCard from '@/components/MealSettingsCard'
 
-export default function SettingsClient({ email, createdAt, onboardedAt, strava, whoopConnected, goalId }) {
+export default function SettingsClient({ email, createdAt, onboardedAt, strava, whoopConnected, goalId, mealGoalId, restrictionIds }) {
   const toast = useToast()
   const [pending, start] = useTransition()
   const [confirming, setConfirming] = useState(null)
@@ -41,6 +42,8 @@ export default function SettingsClient({ email, createdAt, onboardedAt, strava, 
       </Section>
 
       <GoalCard initialGoalId={goalId} />
+
+      <MealSettingsCard initialMealGoal={mealGoalId} initialRestrictions={restrictionIds} />
 
       <Section title="Integrations">
         <IntegrationRow

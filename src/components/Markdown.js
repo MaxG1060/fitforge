@@ -80,6 +80,11 @@ export default function Markdown({ content, accent = '#f97316' }) {
       continue
     }
 
+    if (/^-{3,}\s*$/.test(line) || /^\*{3,}\s*$/.test(line) || /^_{3,}\s*$/.test(line)) {
+      flushBullets()
+      continue
+    }
+
     if (line.startsWith('- ') || line.startsWith('* ')) {
       if (!bullets) bullets = []
       bullets.push(line.slice(2).trim())

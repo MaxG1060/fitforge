@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import OnboardingWizard from './OnboardingWizard'
+import { DEFAULT_MEAL_GOAL_ID } from '@/lib/diet'
 
 export default async function OnboardingPage() {
   const supabase = await createClient()
@@ -15,11 +16,15 @@ export default async function OnboardingPage() {
 
   const firstname = user.user_metadata?.firstname ?? null
   const goal = user.user_metadata?.goal ?? null
+  const mealGoal = user.user_metadata?.meal_goal ?? DEFAULT_MEAL_GOAL_ID
+  const restrictions = user.user_metadata?.dietary_restrictions ?? []
 
   return (
     <OnboardingWizard
       firstname={firstname}
       initialGoal={goal}
+      initialMealGoal={mealGoal}
+      initialRestrictions={restrictions}
       stravaConnected={!!stravaToken}
       whoopConnected={!!whoopToken}
       hasBodyMetric={!!bodyMetric}

@@ -9,8 +9,31 @@ const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'B
 const SWAP_SPORTS = [...SPORTS, 'Rest']
 const DEFAULT_SPORTS = ['Gym', 'Running']
 
-function joinDays({ intro, days }) {
+function isFocusTitle(title) {
+  return /weekly\s*focus|focus\s*for\s*the\s*week|week(?:ly)?\s*overview/i.test(title)
+}
+
+function extractTrailingFocus(body) {
+  if (!body) return { body, focus: null }
+  const lines = body.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const stripped = lines[i].replace(/\*\*/g, '').replace(/^#+\s*/, '').trim()
+    if (isFocusTitle(stripped)) {
+      const before = lines.slice(0, i).join('\n').trim()
+      const after = lines.slice(i + 1).join('\n').trim()
+      return { body: before, focus: after }
+    }
+  }
+  return { body, focus: null }
+}
+
+function joinDays({ intro, focus, days }) {
   const parts = []
+  if (focus) {
+    parts.push('## Weekly focus')
+    parts.push(focus)
+    parts.push('')
+  }
   if (intro) parts.push(intro, '')
   for (const d of days) {
     parts.push(`## ${d.title}`)
@@ -21,7 +44,7 @@ function joinDays({ intro, days }) {
 }
 
 function splitDays(plan) {
-  if (!plan) return { intro: '', days: [] }
+  if (!plan) return { intro: '', focus: null, days: [] }
   const lines = plan.split('\n')
   const days = []
   let current = null
@@ -39,9 +62,29 @@ function splitDays(plan) {
     }
   }
   if (current) days.push(current)
+
+  let focus = null
+  const focusIdx = days.findIndex((d) => isFocusTitle(d.title))
+  if (focusIdx >= 0) {
+    focus = days[focusIdx].bodyLines.join('\n').trim()
+    days.splice(focusIdx, 1)
+  }
+
+  const mapped = days.map((d) => ({ title: d.title, body: d.bodyLines.join('\n').trim() }))
+
+  if (!focus && mapped.length > 0) {
+    const last = mapped[mapped.length - 1]
+    const split = extractTrailingFocus(last.body)
+    if (split.focus) {
+      mapped[mapped.length - 1] = { ...last, body: split.body }
+      focus = split.focus
+    }
+  }
+
   return {
     intro: intro.join('\n').trim(),
-    days: days.map((d) => ({ title: d.title, body: d.bodyLines.join('\n').trim() })),
+    focus,
+    days: mapped,
   }
 }
 
@@ -177,6 +220,12 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
 
       {plan && !loading && (
         <div className="space-y-3">
+          {parsed.focus && (
+            <section className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500 mb-2">Weekly focus</p>
+              <Markdown content={parsed.focus} accent="#f97316" />
+            </section>
+          )}
           {parsed.intro && <Markdown content={parsed.intro} accent="#f97316" />}
           {parsed.days.map((day, i) => {
             const open = swapOpenIdx === i
@@ -184,7 +233,7 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
             return (
               <section key={i} className="rounded-lg border border-zinc-900 bg-black/40 p-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500 min-w-0 truncate">
+                  <h3 className="text-base font-black tracking-tight text-orange-500 min-w-0 truncate">
                     {day.title}
                   </h3>
                   <div className="flex items-center gap-2 shrink-0">

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { buildDietPrompt } from '@/lib/diet'
 
 export async function POST() {
   const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
@@ -17,6 +18,10 @@ export async function POST() {
 
   const weightKg = metrics?.weight_kg ?? 80
   const proteinTarget = Math.round(weightKg * 2.5)
+  const dietPrompt = buildDietPrompt(
+    user.user_metadata?.meal_goal,
+    user.user_metadata?.dietary_restrictions,
+  )
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const { data: recentWorkouts } = await supabase
@@ -44,7 +49,7 @@ export async function POST() {
     system: [
       {
         type: 'text',
-        text: `You are a sports nutrition expert. Generate Sunday meal prep plans with exactly 5 high-protein meals, calibrated to the athlete's recent training load. Format your response as clean markdown with meal names as ## headings. For each meal include: ingredients list, brief prep instructions, and macros (calories, protein, carbs, fat). Scale total daily calories with training volume — high-volume weeks need more carbs and total energy; low-volume weeks lean leaner. Keep instructions practical for batch cooking. No preamble — start directly with the first meal.`,
+        text: `You are a sports nutrition expert. Generate Sunday meal prep plans with exactly 5 meals, calibrated to the athlete's recent training load and diet preferences. ${dietPrompt} Format your response as clean markdown with meal names as ## headings. For each meal include: ingredients list, brief prep instructions, and macros (calories, protein, carbs, fat). Scale total daily calories with training volume — high-volume weeks need more carbs and total energy; low-volume weeks lean leaner. Honor every dietary requirement strictly — never include forbidden ingredients. Keep instructions practical for batch cooking. No preamble — start directly with the first meal.`,
         cache_control: { type: 'ephemeral' },
       },
     ],

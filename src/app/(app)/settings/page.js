@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import SettingsClient from './SettingsClient'
 import { getGoal } from '@/lib/goals'
+import { DEFAULT_MEAL_GOAL_ID } from '@/lib/diet'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -12,6 +13,8 @@ export default async function SettingsPage() {
   ])
 
   const goal = getGoal(user.user_metadata?.goal)
+  const mealGoalId = user.user_metadata?.meal_goal ?? DEFAULT_MEAL_GOAL_ID
+  const restrictionIds = user.user_metadata?.dietary_restrictions ?? []
 
   return (
     <SettingsClient
@@ -21,6 +24,8 @@ export default async function SettingsPage() {
       strava={stravaToken}
       whoopConnected={!!whoopToken}
       goalId={goal.id}
+      mealGoalId={mealGoalId}
+      restrictionIds={restrictionIds}
     />
   )
 }

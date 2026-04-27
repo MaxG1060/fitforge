@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { GOALS } from '@/lib/goals'
+import { MEAL_GOALS, DIETARY_RESTRICTIONS } from '@/lib/diet'
 import { revalidatePath } from 'next/cache'
 
 export async function setGoal(goalId) {
@@ -11,6 +12,23 @@ export async function setGoal(goalId) {
   const { error } = await supabase.auth.updateUser({ data: { goal: goalId } })
   if (error) return { error: error.message }
   revalidatePath('/training')
+  revalidatePath('/settings')
+  return { ok: true }
+}
+
+export async function setMealSettings({ mealGoal, restrictions }) {
+  const supabase = await createClient()
+  if (mealGoal && !MEAL_GOALS.some((g) => g.id === mealGoal)) {
+    return { error: 'Invalid meal goal' }
+  }
+  const cleanRestrictions = Array.isArray(restrictions)
+    ? restrictions.filter((id) => DIETARY_RESTRICTIONS.some((r) => r.id === id))
+    : []
+  const { error } = await supabase.auth.updateUser({
+    data: { meal_goal: mealGoal, dietary_restrictions: cleanRestrictions },
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/meals')
   revalidatePath('/settings')
   return { ok: true }
 }
