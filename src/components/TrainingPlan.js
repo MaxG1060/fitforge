@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from './ToastProvider'
 import Markdown from './Markdown'
 import SportIcon, { pickIconType } from './SportIcon'
 import { lookupExercise, youtubeSearchUrl } from '@/lib/exercises'
+import { dateFromDayTitle, todayISO } from '@/lib/week'
+import { markDayDone, unmarkDay } from '@/app/actions/completions'
 
 const SPORTS = ['Gym', 'Home workout', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
 const SWAP_SPORTS = [...SPORTS, 'Rest']
@@ -173,8 +176,9 @@ function splitDays(plan) {
   }
 }
 
-export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery }) {
+export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery, completedDates = [], streak = 0 }) {
   const toast = useToast()
+  const router = useRouter()
   const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
   const [generatedAt, setGeneratedAt] = useState(savedAt ?? null)
@@ -182,6 +186,9 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
   const [swapOpenIdx, setSwapOpenIdx] = useState(null)
   const [swapBusyIdx, setSwapBusyIdx] = useState(null)
   const [tuneBusyIdx, setTuneBusyIdx] = useState(null)
+  const [completionBusy, setCompletionBusy] = useState(null)
+  const [, startTransition] = useTransition()
+  const completedSet = new Set(completedDates)
 
   const parsed = splitDays(plan)
 
@@ -211,6 +218,24 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
     } finally {
       setLoading(false)
     }
+  }
+
+  function toggleCompletion(date, dayTitle, alreadyDone) {
+    if (!date) {
+      toast.error('Could not infer date for this day.')
+      return
+    }
+    setCompletionBusy(date)
+    startTransition(async () => {
+      const res = alreadyDone
+        ? await unmarkDay({ date })
+        : await markDayDone({ date, dayTitle })
+      if (res?.error) toast.error(res.error)
+      else if (alreadyDone) toast.success('Marked as not done.')
+      else toast.success('Nice — marked done.')
+      setCompletionBusy(null)
+      router.refresh()
+    })
   }
 
   async function tuneToday(index) {
@@ -320,13 +345,20 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Plan</p>
           <h3 className="mt-1 text-xl font-black tracking-tight truncate">This Week</h3>
         </div>
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="rounded-md bg-orange-500 px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
-        >
-          {loading ? 'Generating…' : plan ? 'Regenerate' : 'Generate'}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-orange-400">
+            <SportIcon type="fire" size={12} className="text-orange-400" />
+            <span className="tabular-nums">{streak}</span>
+            <span>day streak</span>
+          </span>
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="rounded-md bg-orange-500 px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Generating…' : plan ? 'Regenerate' : 'Generate'}
+          </button>
+        </div>
       </div>
       <p className="text-sm text-zinc-500 mb-5">
         {goalLabel ?? 'Personal goal'} · tailored to your recent Strava activity
@@ -379,6 +411,10 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
             const isToday = dayMatchesToday(day.title)
             const band = isToday ? recoveryBand(todayRecovery) : null
             const tuning = tuneBusyIdx === i
+            const dayDate = dateFromDayTitle(day.title)
+            const isCompleted = dayDate ? completedSet.has(dayDate) : false
+            const completing = completionBusy === dayDate
+            const isFuture = dayDate ? dayDate > todayISO() : false
             const toneClasses = {
               green: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400',
               yellow: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
@@ -387,18 +423,29 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
             return (
               <section
                 key={i}
-                className={`rounded-lg border p-4 ${
-                  isToday ? 'border-orange-500/40 bg-orange-500/5' : 'border-zinc-900 bg-black/40'
+                className={`rounded-lg border p-4 transition-colors ${
+                  isCompleted
+                    ? 'border-emerald-500/40 bg-emerald-500/5'
+                    : isToday
+                      ? 'border-orange-500/40 bg-orange-500/5'
+                      : 'border-zinc-900 bg-black/40'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="min-w-0 flex items-center gap-2">
-                    {isToday && (
+                    {isCompleted ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.2em] uppercase text-black shrink-0">
+                        <span aria-hidden>✓</span>
+                        Done
+                      </span>
+                    ) : isToday ? (
                       <span className="rounded-md bg-orange-500 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.2em] uppercase text-black shrink-0">
                         Today
                       </span>
-                    )}
-                    <h3 className="text-base font-black tracking-tight text-orange-500 min-w-0 truncate">
+                    ) : null}
+                    <h3 className={`text-base font-black tracking-tight min-w-0 truncate ${
+                      isCompleted ? 'text-emerald-400' : 'text-orange-500'
+                    }`}>
                       {day.title}
                     </h3>
                   </div>
@@ -462,6 +509,22 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
                 )}
 
                 <DayBody body={day.body} dayKey={i} />
+
+                {!isFuture && (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={() => toggleCompletion(dayDate, day.title, isCompleted)}
+                      disabled={completing}
+                      className={`rounded-md px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-colors disabled:opacity-50 ${
+                        isCompleted
+                          ? 'bg-emerald-500 text-black hover:bg-emerald-400'
+                          : 'border border-zinc-800 text-zinc-300 hover:bg-zinc-900'
+                      }`}
+                    >
+                      {completing ? '…' : isCompleted ? 'Undo' : 'Mark done'}
+                    </button>
+                  </div>
+                )}
               </section>
             )
           })}

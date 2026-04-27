@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import TrainingPlan from '@/components/TrainingPlan'
 import GoalBadge from '@/components/GoalBadge'
 import { getGoal } from '@/lib/goals'
+import { computeStreak, todayISO, isoDate } from '@/lib/week'
 
 export default async function TrainingPage() {
   const supabase = await createClient()
@@ -28,6 +29,18 @@ export default async function TrainingPage() {
   const todayRecovery =
     recoveryToday && recoveryToday.date === today ? recoveryToday.score : null
 
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+  const { data: completions } = await supabase
+    .from('workout_completions')
+    .select('date')
+    .eq('user_id', user.id)
+    .gte('date', isoDate(sixtyDaysAgo))
+    .order('date', { ascending: false })
+
+  const completionDates = (completions ?? []).map((r) => r.date)
+  const streak = computeStreak(completionDates)
+  const completedSet = completionDates
+
   const goal = getGoal(user.user_metadata?.goal)
 
   return (
@@ -45,6 +58,8 @@ export default async function TrainingPage() {
         savedAt={latest?.created_at}
         goalLabel={goal.label}
         todayRecovery={todayRecovery}
+        completedDates={completedSet}
+        streak={streak}
       />
     </>
   )
