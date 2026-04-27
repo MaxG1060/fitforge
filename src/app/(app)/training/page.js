@@ -16,6 +16,18 @@ export default async function TrainingPage() {
     .limit(1)
     .maybeSingle()
 
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: recoveryToday } = await supabase
+    .from('whoop_recovery')
+    .select('score, date')
+    .eq('user_id', user.id)
+    .order('date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const todayRecovery =
+    recoveryToday && recoveryToday.date === today ? recoveryToday.score : null
+
   const goal = getGoal(user.user_metadata?.goal)
 
   return (
@@ -28,7 +40,12 @@ export default async function TrainingPage() {
         </div>
         <GoalBadge initialGoalId={goal.id} />
       </div>
-      <TrainingPlan savedPlan={latest?.content} savedAt={latest?.created_at} goalLabel={goal.label} />
+      <TrainingPlan
+        savedPlan={latest?.content}
+        savedAt={latest?.created_at}
+        goalLabel={goal.label}
+        todayRecovery={todayRecovery}
+      />
     </>
   )
 }

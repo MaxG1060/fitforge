@@ -10,6 +10,52 @@ const SPORTS = ['Gym', 'Home workout', 'Running', 'Road cycling', 'Yoga', 'Pilat
 const SWAP_SPORTS = [...SPORTS, 'Rest']
 const DEFAULT_SPORTS = ['Gym', 'Running']
 
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+function todayWeekday() {
+  return WEEKDAYS[new Date().getDay()]
+}
+
+function dayMatchesToday(title) {
+  if (!title) return false
+  const t = title.toLowerCase()
+  return t.includes(todayWeekday())
+}
+
+function recoveryBand(score) {
+  if (score == null) return null
+  if (score >= 67) return { tone: 'green', label: 'Green', advice: 'Ready to push — keep the planned session.' }
+  if (score >= 34) return { tone: 'yellow', label: 'Yellow', advice: 'Trim ~20% volume, keep the same sport.' }
+  return { tone: 'red', label: 'Red', advice: 'Active recovery only — same sport, easy intensity.' }
+}
+
+function inferSport(title) {
+  if (!title) return null
+  const t = title.toLowerCase()
+  const map = [
+    ['home workout', 'Home workout'],
+    ['road cycling', 'Road cycling'],
+    ['cycling', 'Road cycling'], ['bike', 'Road cycling'], ['ride', 'Road cycling'],
+    ['running', 'Running'], ['run', 'Running'], ['tempo', 'Running'], ['sprint', 'Running'],
+    ['swim', 'Swimming'],
+    ['rowing', 'Rowing'], ['erg', 'Rowing'],
+    ['hiking', 'Hiking'], ['hike', 'Hiking'],
+    ['boxing', 'Boxing'], ['box', 'Boxing'],
+    ['padel', 'Padel'],
+    ['yoga', 'Yoga'],
+    ['pilates', 'Pilates'],
+    ['hiit', 'HIIT'], ['interval', 'HIIT'], ['circuit', 'HIIT'],
+    ['rest', 'Rest'], ['recovery', 'Rest'],
+    ['gym', 'Gym'], ['strength', 'Gym'], ['lift', 'Gym'],
+    ['upper body', 'Gym'], ['lower body', 'Gym'], ['full body', 'Gym'],
+    ['push', 'Gym'], ['pull', 'Gym'], ['squat', 'Gym'], ['deadlift', 'Gym'], ['bench', 'Gym'],
+  ]
+  for (const [needle, sport] of map) {
+    if (t.includes(needle)) return sport
+  }
+  return 'Gym'
+}
+
 function isFocusTitle(title) {
   return /weekly\s*focus|focus\s*for\s*the\s*week|week(?:ly)?\s*overview/i.test(title)
 }
@@ -89,7 +135,7 @@ function splitDays(plan) {
   }
 }
 
-export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
+export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecovery }) {
   const toast = useToast()
   const [plan, setPlan] = useState(savedPlan ?? null)
   const [loading, setLoading] = useState(false)
@@ -97,6 +143,7 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
   const [sports, setSports] = useState(DEFAULT_SPORTS)
   const [swapOpenIdx, setSwapOpenIdx] = useState(null)
   const [swapBusyIdx, setSwapBusyIdx] = useState(null)
+  const [tuneBusyIdx, setTuneBusyIdx] = useState(null)
 
   const parsed = splitDays(plan)
 
@@ -125,6 +172,55 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
       toast.error(e.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function tuneToday(index) {
+    const day = parsed.days[index]
+    if (!day) return
+    const sport = inferSport(day.title)
+    if (sport === 'Rest') {
+      toast.error('Rest day — nothing to tune.')
+      return
+    }
+    setTuneBusyIdx(index)
+    try {
+      const others = parsed.days.filter((_, i) => i !== index).map((d) => ({ title: d.title }))
+      const res = await fetch('/api/training-plan/today', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dayTitle: day.title,
+          sport,
+          recoveryScore: todayRecovery,
+          otherDays: others,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+
+      const newSplit = splitDays(data.day)
+      const newDay = newSplit.days[0]
+      if (!newDay) throw new Error('Could not parse tuned day')
+
+      const updated = { ...parsed }
+      updated.days = parsed.days.map((d, i) => (i === index ? newDay : d))
+      const newPlan = joinDays(updated)
+      setPlan(newPlan)
+
+      const save = await fetch('/api/training-plan/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newPlan }),
+      })
+      const saveData = await save.json()
+      if (saveData.error) throw new Error(saveData.error)
+
+      toast.success('Today tuned to your recovery.')
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setTuneBusyIdx(null)
     }
   }
 
@@ -242,16 +338,36 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
           {parsed.days.map((day, i) => {
             const open = swapOpenIdx === i
             const busy = swapBusyIdx === i
+            const isToday = dayMatchesToday(day.title)
+            const band = isToday ? recoveryBand(todayRecovery) : null
+            const tuning = tuneBusyIdx === i
+            const toneClasses = {
+              green: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400',
+              yellow: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
+              red: 'border-rose-500/40 bg-rose-500/5 text-rose-400',
+            }
             return (
-              <section key={i} className="rounded-lg border border-zinc-900 bg-black/40 p-4">
+              <section
+                key={i}
+                className={`rounded-lg border p-4 ${
+                  isToday ? 'border-orange-500/40 bg-orange-500/5' : 'border-zinc-900 bg-black/40'
+                }`}
+              >
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <h3 className="text-base font-black tracking-tight text-orange-500 min-w-0 truncate">
-                    {day.title}
-                  </h3>
+                  <div className="min-w-0 flex items-center gap-2">
+                    {isToday && (
+                      <span className="rounded-md bg-orange-500 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.2em] uppercase text-black shrink-0">
+                        Today
+                      </span>
+                    )}
+                    <h3 className="text-base font-black tracking-tight text-orange-500 min-w-0 truncate">
+                      {day.title}
+                    </h3>
+                  </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => setSwapOpenIdx(open ? null : i)}
-                      disabled={swapBusyIdx !== null}
+                      disabled={swapBusyIdx !== null || tuneBusyIdx !== null}
                       className="rounded-md border border-zinc-800 bg-transparent px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 disabled:opacity-50 transition-colors"
                     >
                       {busy ? 'Swapping…' : open ? 'Cancel' : 'Swap'}
@@ -263,6 +379,24 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
                     />
                   </div>
                 </div>
+
+                {band && (
+                  <div className={`mb-3 flex items-center justify-between gap-3 rounded-md border p-2.5 ${toneClasses[band.tone]}`}>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold tracking-[0.2em] uppercase">
+                        WHOOP recovery · {band.label} {todayRecovery}%
+                      </p>
+                      <p className="mt-0.5 text-xs text-zinc-300 truncate">{band.advice}</p>
+                    </div>
+                    <button
+                      onClick={() => tuneToday(i)}
+                      disabled={tuneBusyIdx !== null || swapBusyIdx !== null}
+                      className="shrink-0 rounded-md bg-orange-500 px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
+                    >
+                      {tuning ? 'Tuning…' : 'Tune today'}
+                    </button>
+                  </div>
+                )}
 
                 {open && (
                   <div className="mb-3 rounded-md border border-zinc-900 bg-black/60 p-3">
