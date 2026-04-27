@@ -15,6 +15,18 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "FitForge",
   description: "Your personal fitness companion",
+  appleWebApp: {
+    capable: true,
+    title: "FitForge",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }) {
