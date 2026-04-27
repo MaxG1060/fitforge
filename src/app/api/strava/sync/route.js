@@ -25,10 +25,21 @@ export async function POST() {
     max_heartrate: a.max_heartrate,
   }))
 
+  let upsertError = null
   if (rows.length > 0) {
-    await supabase.from('workouts').upsert(rows, { onConflict: 'strava_id' })
+    const { error } = await supabase.from('workouts').upsert(rows, { onConflict: 'strava_id' })
+    upsertError = error
+  }
+
+  if (upsertError) {
+    console.error('[strava/sync] upsert failed', upsertError)
+    return Response.json(
+      { error: upsertError.message, details: upsertError.details ?? null, fetched: rows.length },
+      { status: 500 }
+    )
   }
 
   revalidatePath('/dashboard')
-  return Response.json({ synced: rows.length })
+  const sportTypes = [...new Set(rows.map((r) => r.sport_type))]
+  return Response.json({ synced: rows.length, sportTypes })
 }
