@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import TrainingPlan from '@/components/TrainingPlan'
-import GoalCard from '@/components/GoalCard'
+import GoalBadge from '@/components/GoalBadge'
 import { getGoal } from '@/lib/goals'
 
 export default async function TrainingPage() {
@@ -20,12 +20,14 @@ export default async function TrainingPage() {
 
   return (
     <>
-      <div>
-        <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-500">This Week</p>
-        <h2 className="mt-1 text-3xl font-black tracking-tight">Training Plan</h2>
-        <p className="mt-2 text-sm text-zinc-500">Generated weekly, tailored to your sport mix and recent activity.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-500">This Week</p>
+          <h2 className="mt-1 text-3xl font-black tracking-tight">Training Plan</h2>
+          <p className="mt-2 text-sm text-zinc-500">Generated weekly, tailored to your sport mix and recent activity.</p>
+        </div>
+        <GoalBadge initialGoalId={goal.id} />
       </div>
-      <GoalCard initialGoalId={goal.id} />
       <TrainingPlan savedPlan={latest?.content} savedAt={latest?.created_at} goalLabel={goal.label} />
     </>
   )
