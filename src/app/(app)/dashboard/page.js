@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import BodyMetricsForm from '@/components/BodyMetricsForm'
 import TrendChart from '@/components/TrendChart'
 import StravaWorkouts from '@/components/StravaWorkouts'
@@ -9,6 +10,15 @@ import { getValidAccessToken, fetchAthlete } from '@/lib/strava'
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user.user_metadata?.onboarded_at) {
+    const [{ data: s }, { data: w }, { data: b }] = await Promise.all([
+      supabase.from('strava_tokens').select('user_id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('whoop_tokens').select('user_id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('body_metrics').select('id').eq('user_id', user.id).limit(1).maybeSingle(),
+    ])
+    if (!s && !w && !b) redirect('/onboarding')
+  }
 
   const { data: metricsHistory } = await supabase
     .from('body_metrics')
