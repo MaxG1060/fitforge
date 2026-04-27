@@ -55,6 +55,9 @@ export async function POST(request) {
         type: 'text',
         text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown. Start with a "## Weekly focus" heading containing 2-4 sentences that reference the athlete's recent activity and explain how this week's sport mix fits. Then list each day Monday through Sunday as its own ## heading (e.g. "## Monday — Upper Body") with bullet points for exercises and a brief coaching note per session. Primary goal: ${goal.coachPrompt}. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups in service of the goal. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder.
 
+SPORT-SPECIFIC RULES:
+- "Home workout" sessions MUST use only bodyweight exercises and resistance bands. No barbells, dumbbells, kettlebells, machines, benches, or pull-up bars. Typical moves: push-ups (and variations), squats, lunges, glute bridges, planks, banded rows, banded squats, banded RDLs, band pull-aparts, band overhead press, band curls, pike push-ups, etc.
+
 EXERCISE BULLET FORMAT — every exercise bullet MUST follow this exact pattern, with " — " (space em-dash space) as the separator:
 - {Exercise name}: {sets × reps or duration} — {one short form cue, max 12 words}
 

@@ -6,7 +6,7 @@ import Markdown from './Markdown'
 import SportIcon, { pickIconType } from './SportIcon'
 import { lookupExercise, youtubeSearchUrl } from '@/lib/exercises'
 
-const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
+const SPORTS = ['Gym', 'Home workout', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
 const SWAP_SPORTS = [...SPORTS, 'Rest']
 const DEFAULT_SPORTS = ['Gym', 'Running']
 
@@ -319,13 +319,13 @@ function renderInlineMd(text, keyPrefix) {
   return parts
 }
 
-function ExerciseRow({ name, spec, cue, rowKey }) {
+function ExerciseRow({ name, spec, cue, rowKey, indent = 0 }) {
   const [open, setOpen] = useState(false)
   const dict = lookupExercise(name)
   const hasDetails = !!(cue || dict)
 
   return (
-    <li className="rounded-md">
+    <li className={`rounded-md ${indent ? 'pl-4 border-l border-zinc-800/60 ml-1.5' : ''}`}>
       <button
         type="button"
         onClick={() => hasDetails && setOpen((v) => !v)}
@@ -386,6 +386,8 @@ function ExerciseRow({ name, spec, cue, rowKey }) {
   )
 }
 
+const BULLET_RE = /^(\s*)([-*])\s+(.*)$/
+
 function DayBody({ body, dayKey }) {
   if (!body) return null
   const lines = body.split('\n')
@@ -399,8 +401,15 @@ function DayBody({ body, dayKey }) {
     blocks.push(
       <ul key={`ul-${dayKey}-${blockKey++}`} className="space-y-0.5">
         {items.map((b, i) => {
-          const parsed = parseExerciseBullet(b)
-          return <ExerciseRow key={i} rowKey={`${dayKey}-${blockKey}-${i}`} {...parsed} />
+          const parsed = parseExerciseBullet(b.text)
+          return (
+            <ExerciseRow
+              key={i}
+              rowKey={`${dayKey}-${blockKey}-${i}`}
+              indent={b.indent}
+              {...parsed}
+            />
+          )
         })}
       </ul>
     )
@@ -409,11 +418,14 @@ function DayBody({ body, dayKey }) {
 
   for (const raw of lines) {
     const line = raw.trimEnd()
-    if (line.startsWith('- ') || line.startsWith('* ')) {
-      bullets.push(line)
+    const m = line.match(BULLET_RE)
+    if (m) {
+      const leading = m[1] || ''
+      const indent = leading.length >= 2 ? 1 : 0
+      bullets.push({ text: `- ${m[3]}`, indent })
       continue
     }
-    if (/^-{3,}\s*$/.test(line)) continue
+    if (/^-{3,}\s*$/.test(line.trim())) continue
     flushBullets()
     if (line.trim() === '') continue
     if (line.startsWith('### ')) {
