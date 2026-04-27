@@ -6,7 +6,19 @@ import Markdown from './Markdown'
 import SportIcon, { pickIconType } from './SportIcon'
 
 const SPORTS = ['Gym', 'Running', 'Road cycling', 'Yoga', 'Pilates', 'Padel', 'Boxing', 'Swimming', 'HIIT', 'Hiking', 'Rowing']
+const SWAP_SPORTS = [...SPORTS, 'Rest']
 const DEFAULT_SPORTS = ['Gym', 'Running']
+
+function joinDays({ intro, days }) {
+  const parts = []
+  if (intro) parts.push(intro, '')
+  for (const d of days) {
+    parts.push(`## ${d.title}`)
+    if (d.body) parts.push(d.body)
+    parts.push('')
+  }
+  return parts.join('\n').trim()
+}
 
 function splitDays(plan) {
   if (!plan) return { intro: '', days: [] }
@@ -39,6 +51,10 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
   const [loading, setLoading] = useState(false)
   const [generatedAt, setGeneratedAt] = useState(savedAt ?? null)
   const [sports, setSports] = useState(DEFAULT_SPORTS)
+  const [swapOpenIdx, setSwapOpenIdx] = useState(null)
+  const [swapBusyIdx, setSwapBusyIdx] = useState(null)
+
+  const parsed = splitDays(plan)
 
   function toggleSport(s) {
     setSports((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
@@ -65,6 +81,46 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
       toast.error(e.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function swapDay(index, sport) {
+    const day = parsed.days[index]
+    if (!day) return
+    setSwapBusyIdx(index)
+    try {
+      const others = parsed.days.filter((_, i) => i !== index).map((d) => ({ title: d.title }))
+      const res = await fetch('/api/training-plan/day', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dayTitle: day.title, sport, otherDays: others }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+
+      const newSplit = splitDays(data.day)
+      const newDay = newSplit.days[0]
+      if (!newDay) throw new Error('Could not parse new day')
+
+      const updated = { ...parsed }
+      updated.days = parsed.days.map((d, i) => (i === index ? newDay : d))
+      const newPlan = joinDays(updated)
+      setPlan(newPlan)
+      setSwapOpenIdx(null)
+
+      const save = await fetch('/api/training-plan/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newPlan }),
+      })
+      const saveData = await save.json()
+      if (saveData.error) throw new Error(saveData.error)
+
+      toast.success(`${day.title.split(/[—:-]/)[0].trim()} → ${sport}`)
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setSwapBusyIdx(null)
     }
   }
 
@@ -119,29 +175,58 @@ export default function TrainingPlan({ savedPlan, savedAt }) {
         </div>
       )}
 
-      {plan && !loading && (() => {
-        const parsed = splitDays(plan)
-        return (
-          <div className="space-y-3">
-            {parsed.intro && <Markdown content={parsed.intro} accent="#f97316" />}
-            {parsed.days.map((day, i) => (
+      {plan && !loading && (
+        <div className="space-y-3">
+          {parsed.intro && <Markdown content={parsed.intro} accent="#f97316" />}
+          {parsed.days.map((day, i) => {
+            const open = swapOpenIdx === i
+            const busy = swapBusyIdx === i
+            return (
               <section key={i} className="rounded-lg border border-zinc-900 bg-black/40 p-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <h3 className="text-[10px] font-bold tracking-[0.2em] uppercase text-orange-500 min-w-0 truncate">
                     {day.title}
                   </h3>
-                  <SportIcon
-                    type={pickIconType(`${day.title} ${day.body}`)}
-                    size={20}
-                    className="text-zinc-400 shrink-0"
-                  />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setSwapOpenIdx(open ? null : i)}
+                      disabled={swapBusyIdx !== null}
+                      className="rounded-md border border-zinc-800 bg-transparent px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-zinc-900 disabled:opacity-50 transition-colors"
+                    >
+                      {busy ? 'Swapping…' : open ? 'Cancel' : 'Swap'}
+                    </button>
+                    <SportIcon
+                      type={pickIconType(day.title)}
+                      size={20}
+                      className="text-zinc-400"
+                    />
+                  </div>
                 </div>
+
+                {open && (
+                  <div className="mb-3 rounded-md border border-zinc-900 bg-black/60 p-3">
+                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">Pick a sport</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SWAP_SPORTS.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => swapDay(i, s)}
+                          disabled={swapBusyIdx !== null}
+                          className="rounded-md bg-zinc-900 px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-300 hover:bg-orange-500 hover:text-black disabled:opacity-50 transition-colors"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <Markdown content={day.body} accent="#f97316" />
               </section>
-            ))}
-          </div>
-        )
-      })()}
+            )
+          })}
+        </div>
+      )}
 
       {!plan && !loading && (
         <p className="text-sm text-zinc-500">Click &quot;Generate&quot; to get your AI-tailored weekly training.</p>

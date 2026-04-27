@@ -15,25 +15,32 @@ const PATHS = {
 }
 
 const KEYWORDS = [
-  { keys: ['rest', 'off day', 'recovery day', 'active recovery'], type: 'rest' },
-  { keys: ['mobility', 'stretch', 'foam roll'], type: 'yoga' },
-  { keys: ['gym', 'strength', 'lift', 'weight', 'push', 'pull', 'squat', 'deadlift', 'bench'], type: 'gym' },
-  { keys: ['hiit', 'interval', 'metcon', 'circuit'], type: 'hiit' },
-  { keys: ['run', 'jog', 'tempo', '5k', '10k', 'sprint'], type: 'running' },
-  { keys: ['cycling', 'cycle', 'bike', 'ride'], type: 'cycling' },
+  { keys: ['cycling', 'cycle', 'bike', 'ride', 'spin'], type: 'cycling' },
+  { keys: ['running', 'run', 'jog', 'tempo', 'sprint', '5k', '10k', 'easy run', 'long run'], type: 'running' },
+  { keys: ['swim', 'pool', 'freestyle'], type: 'swimming' },
+  { keys: ['rowing', 'row', 'erg'], type: 'rowing' },
+  { keys: ['hiking', 'hike', 'trail walk'], type: 'hiking' },
+  { keys: ['boxing', 'box', 'punch', 'sparring'], type: 'boxing' },
+  { keys: ['padel', 'tennis', 'racket'], type: 'padel' },
   { keys: ['yoga'], type: 'yoga' },
   { keys: ['pilates'], type: 'pilates' },
-  { keys: ['padel', 'tennis'], type: 'padel' },
-  { keys: ['box', 'punch'], type: 'boxing' },
-  { keys: ['swim', 'pool'], type: 'swimming' },
-  { keys: ['hik', 'trail'], type: 'hiking' },
-  { keys: ['row'], type: 'rowing' },
+  { keys: ['mobility', 'stretch', 'foam roll'], type: 'yoga' },
+  { keys: ['hiit', 'interval', 'metcon', 'circuit', 'tabata'], type: 'hiit' },
+  { keys: ['gym', 'strength', 'lift', 'weight', 'push day', 'pull day', 'squat', 'deadlift', 'bench', 'upper body', 'lower body', 'full body'], type: 'gym' },
+  { keys: ['rest day', 'rest', 'off day', 'recovery day', 'active recovery'], type: 'rest' },
 ]
 
+function matches(lower, key) {
+  if (key.includes(' ')) return lower.includes(key)
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`\\b${escaped}\\b`).test(lower)
+}
+
 export function pickIconType(text) {
+  if (!text) return 'fire'
   const lower = text.toLowerCase()
   for (const { keys, type } of KEYWORDS) {
-    if (keys.some((k) => lower.includes(k))) return type
+    if (keys.some((k) => matches(lower, k))) return type
   }
   return 'fire'
 }
