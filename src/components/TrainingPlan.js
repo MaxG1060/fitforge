@@ -148,6 +148,17 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel }) {
 
       const updated = { ...parsed }
       updated.days = parsed.days.map((d, i) => (i === index ? newDay : d))
+
+      try {
+        const focusRes = await fetch('/api/training-plan/focus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: updated.days.map((d) => ({ title: d.title })) }),
+        })
+        const focusData = await focusRes.json()
+        if (focusData.focus) updated.focus = focusData.focus
+      } catch {}
+
       const newPlan = joinDays(updated)
       setPlan(newPlan)
       setSwapOpenIdx(null)
