@@ -5,25 +5,53 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
   const [error, setError] = useState(null)
-  const [sent, setSent] = useState(false)
+  const [info, setInfo] = useState(null)
+  const [magicSent, setMagicSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
-  async function handleSubmit(e) {
+  async function handlePasswordSubmit(e) {
     e.preventDefault()
     setError(null)
+    setInfo(null)
+    setLoading(true)
+
+    if (mode === 'signup') {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      })
+      if (error) setError(error.message)
+      else setInfo('Check your email to confirm your account.')
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setError(error.message)
+      else window.location.href = '/dashboard'
+    }
+
+    setLoading(false)
+  }
+
+  async function sendMagicLink() {
+    if (!email) {
+      setError('Enter your email first.')
+      return
+    }
+    setError(null)
+    setInfo(null)
     setLoading(true)
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
 
     if (error) setError(error.message)
-    else setSent(true)
+    else setMagicSent(true)
 
     setLoading(false)
   }
@@ -36,7 +64,7 @@ export default function LoginPage() {
           <p className="mt-3 text-sm text-zinc-500">Your personal fitness companion</p>
         </div>
 
-        {sent ? (
+        {magicSent ? (
           <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-6 text-center">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-emerald-400 mb-3">
               Check your inbox
@@ -44,49 +72,97 @@ export default function LoginPage() {
             <p className="text-sm text-zinc-300">
               We sent a sign-in link to <span className="font-semibold text-white">{email}</span>.
             </p>
-            <p className="mt-3 text-xs text-zinc-500">Click the link to sign in. You can close this tab.</p>
             <button
-              onClick={() => { setSent(false); setEmail('') }}
+              onClick={() => { setMagicSent(false); setInfo(null); setError(null) }}
               className="mt-5 text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-400 hover:text-white"
             >
-              Use a different email
+              Back
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-                className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                placeholder="you@example.com"
-              />
+          <>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-md px-3 py-2">
+                  {error}
+                </p>
+              )}
+              {info && (
+                <p className="text-sm text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded-md px-3 py-2">
+                  {info}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-md bg-orange-500 px-4 py-2.5 text-xs font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
+              >
+                {loading ? '…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+              </button>
+
+              <div className="flex items-center justify-between text-[10px] font-bold tracking-[0.15em] uppercase">
+                <button
+                  type="button"
+                  onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); setInfo(null) }}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  {mode === 'signin' ? 'Create account' : 'Have an account? Sign in'}
+                </button>
+                <button
+                  type="button"
+                  onClick={sendMagicLink}
+                  disabled={loading}
+                  className="text-zinc-400 hover:text-white disabled:opacity-50"
+                >
+                  Email me a magic link
+                </button>
+              </div>
+            </form>
+
+            <div className="my-5 flex items-center gap-3">
+              <div className="flex-1 h-px bg-zinc-900" />
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-600">Or</span>
+              <div className="flex-1 h-px bg-zinc-900" />
             </div>
 
-            {error && (
-              <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-md px-3 py-2">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-md bg-orange-500 px-4 py-2.5 text-xs font-bold tracking-[0.15em] uppercase text-black hover:bg-orange-400 disabled:opacity-50 transition-colors"
+            <a
+              href="/api/strava/login"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#fc4c02] px-4 py-2.5 text-xs font-bold tracking-[0.15em] uppercase text-white hover:bg-[#e54402] transition-colors"
             >
-              {loading ? 'Sending…' : 'Email me a sign-in link'}
-            </button>
-
-            <p className="text-center text-xs text-zinc-500 pt-2">
-              No password needed. We&apos;ll email you a magic link.
-            </p>
-          </form>
+              Sign in with Strava
+            </a>
+          </>
         )}
       </div>
     </div>
