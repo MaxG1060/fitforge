@@ -29,6 +29,39 @@ function recoveryBand(score) {
   return { tone: 'red', label: 'Red', advice: 'Active recovery only — same sport, easy intensity.' }
 }
 
+const DURATION_NUMBER_RE = /(\d+)\s*(?:[-–to]+\s*(\d+)\s*)?(?:min|minutes|m)\b/i
+
+function isDurationLine(line) {
+  const stripped = line.replace(/[*_`]/g, '').trim()
+  if (!stripped) return false
+  if (/^duration\b/i.test(stripped)) return true
+  if (stripped.startsWith('-') || stripped.startsWith('•')) return false
+  if (stripped.length > 40) return false
+  return DURATION_NUMBER_RE.test(stripped) && /^[~\s\d]/.test(stripped)
+}
+
+function extractDuration(body) {
+  if (!body) return { body, duration: null }
+  const lines = body.split('\n')
+  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const line = lines[i].trim()
+    if (line === '') continue
+    if (isDurationLine(line)) {
+      const stripped = line.replace(/[*_`]/g, '').trim()
+      const m = stripped.match(DURATION_NUMBER_RE)
+      if (m) {
+        const lo = parseInt(m[1], 10)
+        const hi = m[2] ? parseInt(m[2], 10) : null
+        const value = hi ? Math.round((lo + hi) / 2) : lo
+        const rest = [...lines.slice(0, i), ...lines.slice(i + 1)].join('\n').trim()
+        return { body: rest, duration: value }
+      }
+    }
+    if (line.startsWith('-') || line.startsWith('*') || line.startsWith('•')) break
+  }
+  return { body, duration: null }
+}
+
 function inferSport(title) {
   if (!title) return null
   const t = title.toLowerCase()
@@ -84,6 +117,7 @@ function joinDays({ intro, focus, days }) {
   if (intro) parts.push(intro, '')
   for (const d of days) {
     parts.push(`## ${d.title}`)
+    if (d.duration) parts.push(`_Duration: ~${d.duration} min_`)
     if (d.body) parts.push(d.body)
     parts.push('')
   }
@@ -117,7 +151,11 @@ function splitDays(plan) {
     days.splice(focusIdx, 1)
   }
 
-  const mapped = days.map((d) => ({ title: d.title, body: d.bodyLines.join('\n').trim() }))
+  const mapped = days.map((d) => {
+    const rawBody = d.bodyLines.join('\n').trim()
+    const { body, duration } = extractDuration(rawBody)
+    return { title: d.title, body, duration }
+  })
 
   if (!focus && mapped.length > 0) {
     const last = mapped[mapped.length - 1]
@@ -372,11 +410,18 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
                     >
                       {busy ? 'Swapping…' : open ? 'Cancel' : 'Swap'}
                     </button>
-                    <SportIcon
-                      type={pickIconType(day.title)}
-                      size={20}
-                      className="text-zinc-400"
-                    />
+                    <div className="flex items-center gap-1.5 pl-1">
+                      {day.duration ? (
+                        <span className="text-xs font-medium tabular-nums text-zinc-400">
+                          ~{day.duration} min
+                        </span>
+                      ) : null}
+                      <SportIcon
+                        type={pickIconType(day.title)}
+                        size={20}
+                        className="text-zinc-400"
+                      />
+                    </div>
                   </div>
                 </div>
 

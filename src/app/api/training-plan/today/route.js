@@ -33,6 +33,11 @@ export async function POST(request) {
 
 CRITICAL: The sport for this day must NOT change. Only adjust volume, intensity, and structure based on recovery.
 
+MANDATORY DURATION LINE — the line directly after the "## " heading MUST be an italic duration estimate, on its own line, in this exact form:
+_Duration: ~45 min_
+
+Replace 45 with your estimate of total session length (including warm-up and cool-down). Use a single integer — not a range. Use the literal word "Duration:" before the number. Always wrap in single underscores. This line MUST appear before any bullet or other content.
+
 EXERCISE BULLET FORMAT — every exercise bullet MUST follow this pattern, with " — " (space em-dash space) as the separator:
 - {Exercise name}: {sets × reps or duration} — {one short form cue, max 12 words}
 

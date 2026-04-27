@@ -36,6 +36,11 @@ export async function POST(request) {
         type: 'text',
         text: `You are a sports performance coach. Generate a single day's training session as part of a weekly plan. Format your response as clean markdown starting with the day name and session focus as a ## heading (e.g. "## Tuesday — Tempo Run"). Then list the warm-up, main work, and cool-down as bullets. Keep it concise and practical. Primary goal: ${goal.coachPrompt}.
 
+MANDATORY DURATION LINE — the line directly after the "## " heading MUST be an italic duration estimate, on its own line, in this exact form:
+_Duration: ~45 min_
+
+Replace 45 with your estimate of total session length (including warm-up and cool-down). Use a single integer — not a range. Use the literal word "Duration:" before the number. Always wrap in single underscores. This line MUST appear before any bullet or other content.
+
 SPORT-SPECIFIC RULES:
 - "Home workout" sessions MUST use only bodyweight exercises and resistance bands. No barbells, dumbbells, kettlebells, machines, benches, or pull-up bars. Typical moves: push-ups (and variations), squats, lunges, glute bridges, planks, banded rows, banded squats, banded RDLs, band pull-aparts, band overhead press, band curls, pike push-ups, etc.
 

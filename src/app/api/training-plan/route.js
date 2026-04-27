@@ -55,6 +55,11 @@ export async function POST(request) {
         type: 'text',
         text: `You are an expert strength and conditioning coach. Generate practical weekly training plans tailored to the athlete's recent training load and chosen sports. Format as clean markdown. Start with a "## Weekly focus" heading containing 2-4 sentences that reference the athlete's recent activity and explain how this week's sport mix fits. Then list each day Monday through Sunday as its own ## heading (e.g. "## Monday — Upper Body") with bullet points for exercises and a brief coaching note per session. Primary goal: ${goal.coachPrompt}. Use only the sports the athlete selects — distribute them sensibly across the week, balancing intensity, recovery, and complementary muscle groups in service of the goal. Account for recovery: if the athlete just did a high-volume week, dial back; if they took rest days, push harder.
 
+MANDATORY DURATION LINE — for EVERY day, the line directly after the "## " heading MUST be an italic duration estimate, on its own line, in this exact form:
+_Duration: ~45 min_
+
+Replace 45 with your estimate of total session length (including warm-up and cool-down). Use a single integer — not a range. Use the literal word "Duration:" before the number. Always wrap in single underscores. Do NOT skip this line on any day, including rest days (use _Duration: ~20 min_ for active recovery, or _Duration: 0 min_ for full rest). This line MUST appear on every day before any bullet or other content.
+
 SPORT-SPECIFIC RULES:
 - "Home workout" sessions MUST use only bodyweight exercises and resistance bands. No barbells, dumbbells, kettlebells, machines, benches, or pull-up bars. Typical moves: push-ups (and variations), squats, lunges, glute bridges, planks, banded rows, banded squats, banded RDLs, band pull-aparts, band overhead press, band curls, pike push-ups, etc.
 
