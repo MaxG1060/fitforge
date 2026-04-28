@@ -3,7 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { computeStreak, isoDate, weekStartMonday } from '@/lib/week'
 import SocialClient from './SocialClient'
 
-export default async function SocialPage() {
+export default async function SocialPage({ searchParams }) {
+  const sp = (await searchParams) ?? {}
+  const prefillUsername = typeof sp.add === 'string' ? sp.add.toLowerCase().slice(0, 20) : ''
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -82,15 +84,16 @@ export default async function SocialPage() {
     r.requester_id === user.id ? r.addressee_id : r.requester_id
   )
   const allLeaderboardIds = [...new Set([user.id, ...friendIds])]
-  const sixtyDaysAgo = isoDate(new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))
+  const yearAgoIso = isoDate(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000))
   const mondayIso = isoDate(weekStartMonday())
+  const monthAgoIso = isoDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
 
   const { data: completions } = allLeaderboardIds.length
     ? await supabase
         .from('workout_completions')
-        .select('user_id, date')
+        .select('user_id, date, day_title')
         .in('user_id', allLeaderboardIds)
-        .gte('date', sixtyDaysAgo)
+        .gte('date', yearAgoIso)
         .order('date', { ascending: false })
     : { data: [] }
 
@@ -119,15 +122,60 @@ export default async function SocialPage() {
   const leaderboardRows = allLeaderboardIds.map((uid) => {
     const dates = datesByUser.get(uid) ?? []
     const weekCount = dates.filter((d) => d >= mondayIso).length
+    const monthCount = dates.filter((d) => d >= monthAgoIso).length
+    const allCount = dates.length
     const streak = computeStreak(dates)
     const person = uid === user.id ? me : buildPerson(uid)
-    return { ...person, weekCount, streak }
+    return { ...person, weekCount, monthCount, allCount, streak }
   })
-  leaderboardRows.sort((a, b) => b.weekCount - a.weekCount || b.streak - a.streak)
 
   const friendsList = accepted.map((r) => {
     const otherId = r.requester_id === user.id ? r.addressee_id : r.requester_id
     return { id: r.id, person: buildPerson(otherId) }
+  })
+
+  // Activity feed — friends + me, last 14 days, newest first
+  const fourteenDaysAgo = isoDate(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000))
+  const feedRaw = (completions ?? [])
+    .filter((c) => c.date >= fourteenDaysAgo)
+    .slice(0, 50)
+
+  // Reactions on these completions
+  const feedUserIds = [...new Set(feedRaw.map((c) => c.user_id))]
+  const feedDates = [...new Set(feedRaw.map((c) => c.date))]
+  const { data: reactions } = feedRaw.length
+    ? await supabase
+        .from('completion_reactions')
+        .select('completion_user_id, completion_date, reactor_id, emoji')
+        .in('completion_user_id', feedUserIds)
+        .in('completion_date', feedDates)
+    : { data: [] }
+
+  const reactionsByKey = new Map()
+  for (const r of reactions ?? []) {
+    const key = `${r.completion_user_id}|${r.completion_date}`
+    if (!reactionsByKey.has(key)) reactionsByKey.set(key, [])
+    reactionsByKey.get(key).push(r)
+  }
+
+  const feed = feedRaw.map((c) => {
+    const person = c.user_id === user.id ? me : buildPerson(c.user_id)
+    const rs = reactionsByKey.get(`${c.user_id}|${c.date}`) ?? []
+    const counts = {}
+    const mine = new Set()
+    for (const r of rs) {
+      counts[r.emoji] = (counts[r.emoji] || 0) + 1
+      if (r.reactor_id === user.id) mine.add(r.emoji)
+    }
+    return {
+      id: `${c.user_id}-${c.date}`,
+      date: c.date,
+      day_title: c.day_title,
+      person,
+      completionUserId: c.user_id,
+      counts,
+      mine: [...mine],
+    }
   })
 
   return (
@@ -138,6 +186,8 @@ export default async function SocialPage() {
       outgoing={outgoingDetailed}
       friends={friendsList}
       leaderboard={leaderboardRows}
+      feed={feed}
+      prefillUsername={prefillUsername}
     />
   )
 }
