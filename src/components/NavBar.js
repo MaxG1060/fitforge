@@ -67,7 +67,7 @@ function Icon({ children, className = '' }) {
   )
 }
 
-export default function NavBar() {
+export default function NavBar({ badges = {} }) {
   const pathname = usePathname()
 
   const isActive = (href) => pathname === href || pathname.startsWith(href + '/')
@@ -78,17 +78,25 @@ export default function NavBar() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto">
           {TABS.map((tab) => {
             const active = isActive(tab.href)
+            const badge = badges[tab.href] || 0
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`px-4 py-3 text-xs font-bold tracking-[0.15em] uppercase border-b-2 transition-colors whitespace-nowrap ${
+                className={`relative px-4 py-3 text-xs font-bold tracking-[0.15em] uppercase border-b-2 transition-colors whitespace-nowrap ${
                   active
                     ? 'border-orange-500 text-white'
                     : 'border-transparent text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                {tab.label}
+                <span className="inline-flex items-center gap-2">
+                  {tab.label}
+                  {badge > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-[10px] font-black text-black tabular-nums">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  )}
+                </span>
               </Link>
             )
           })}
@@ -102,15 +110,23 @@ export default function NavBar() {
         <div className="grid grid-cols-4">
           {TABS.map((tab) => {
             const active = isActive(tab.href)
+            const badge = badges[tab.href] || 0
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-colors ${
+                className={`relative flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-colors ${
                   active ? 'text-orange-500' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                <Icon>{tab.icon}</Icon>
+                <span className="relative">
+                  <Icon>{tab.icon}</Icon>
+                  {badge > 0 && (
+                    <span className="absolute -top-1 -right-2 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-orange-500 text-[9px] font-black text-black tabular-nums">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  )}
+                </span>
                 {tab.label}
               </Link>
             )

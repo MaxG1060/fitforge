@@ -11,7 +11,7 @@ export default async function AppLayout({ children }) {
   if (!user) redirect('/login')
 
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-  const [{ data: stravaToken }, { data: completions }] = await Promise.all([
+  const [{ data: stravaToken }, { data: completions }, { count: incomingRequests }] = await Promise.all([
     supabase
       .from('strava_tokens')
       .select('profile_url')
@@ -23,6 +23,11 @@ export default async function AppLayout({ children }) {
       .eq('user_id', user.id)
       .gte('date', isoDate(sixtyDaysAgo))
       .order('date', { ascending: false }),
+    supabase
+      .from('friendships')
+      .select('id', { count: 'exact', head: true })
+      .eq('addressee_id', user.id)
+      .eq('status', 'pending'),
   ])
 
   const streak = computeStreak((completions ?? []).map((r) => r.date))
@@ -47,7 +52,7 @@ export default async function AppLayout({ children }) {
           <UserMenu email={user.email} profileUrl={stravaToken?.profile_url} />
         </div>
       </header>
-      <NavBar />
+      <NavBar badges={{ '/social': incomingRequests ?? 0 }} />
       <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 pb-24 sm:pb-10 space-y-6 flex-1">
         {children}
       </main>
