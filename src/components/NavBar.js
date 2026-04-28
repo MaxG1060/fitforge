@@ -34,6 +34,18 @@ const TABS = [
       </>
     ),
   },
+  {
+    href: '/social',
+    label: 'Social',
+    icon: (
+      <>
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 20c0-3 3-5 6-5s6 2 6 5" />
+        <circle cx="17" cy="6" r="2.5" />
+        <path d="M15 13c2-1 6 0 6 4" />
+      </>
+    ),
+  },
 ]
 
 function Icon({ children, className = '' }) {
@@ -87,7 +99,7 @@ export default function NavBar() {
         className="sm:hidden fixed left-0 right-0 bottom-0 z-20 border-t border-zinc-900 bg-black/95 backdrop-blur"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-4">
           {TABS.map((tab) => {
             const active = isActive(tab.href)
             return (
