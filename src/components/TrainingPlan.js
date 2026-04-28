@@ -370,11 +370,6 @@ export default function TrainingPlan({ savedPlan, savedAt, goalLabel, todayRecov
           <h3 className="mt-1 text-xl font-black tracking-tight truncate">This Week</h3>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-orange-400">
-            <SportIcon type="fire" size={12} className="text-orange-400" />
-            <span className="tabular-nums">{streak}</span>
-            <span>day streak</span>
-          </span>
           {shareUsername && (
             <button
               onClick={async () => {

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import TrainingPlan from '@/components/TrainingPlan'
 import GoalBadge from '@/components/GoalBadge'
+import SportIcon from '@/components/SportIcon'
 import { getGoal } from '@/lib/goals'
 import { computeStreak, todayISO, isoDate, weekStartMonday } from '@/lib/week'
 
@@ -77,7 +78,14 @@ export default async function TrainingPage() {
           <h2 className="mt-1 text-3xl font-black tracking-tight">Training Plan</h2>
           <p className="mt-2 text-sm text-zinc-500">Generated weekly, tailored to your sport mix and recent activity.</p>
         </div>
-        <GoalBadge initialGoalId={goal.id} />
+        <div className="flex flex-col items-stretch gap-2 shrink-0">
+          <GoalBadge initialGoalId={goal.id} />
+          <span className="flex items-center justify-center gap-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] uppercase text-orange-400">
+            <SportIcon type="fire" size={12} className="text-orange-400" />
+            <span className="tabular-nums">{streak}</span>
+            <span>day streak</span>
+          </span>
+        </div>
       </div>
       <TrainingPlan
         savedPlan={latest?.content}
