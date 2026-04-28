@@ -3,6 +3,7 @@ import SettingsClient from './SettingsClient'
 import { getGoal } from '@/lib/goals'
 import { DEFAULT_MEAL_GOAL_ID } from '@/lib/diet'
 import PublicProfileCard from '@/components/PublicProfileCard'
+import PushNotificationsCard from '@/components/PushNotificationsCard'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -40,6 +41,7 @@ export default async function SettingsPage() {
         initialIsPublic={profile?.is_public ?? false}
         appUrl={appUrl}
       />
+      <PushNotificationsCard vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''} />
     </>
   )
 }
